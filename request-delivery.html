@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Request Delivery - Mayko Delivery</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>🚚 Mayko Delivery</h1>
+
+<h2>Request Delivery</h2>
+
+<form onsubmit="requestDelivery(event)">
+
+    <input type="text" id="fullName" placeholder="Full Name"><br><br>
+
+    <input type="tel" id="phone" placeholder="Phone Number"><br><br>
+
+    <input type="text" id="pickup" placeholder="Pickup Address"><br><br>
+
+    <input type="text"  id="delivery" placeholder="Delivery Address"><br><br>
+
+    <input type="text" id="details" placeholder="Package / Order Details"><br><br>
+
+    <button type="submit">Request Delivery</button>
+
+</form>
+
+<br>
+
+<a href="index.html">Back Home</a>
+<script>
+  function requestDelivery(event) {
+    event.preventDefault();
+    localStorage.setItem("deliveryStatus", "available");
+    let fullName = document.getElementById("fullName").value;
+    let phone = document.getElementById("phone").value;
+    let pickup = document.getElementById("pickup").value;
+    let delivery = document.getElementById("delivery").value;
+    let details = document.getElementById("details").value;
+    localStorage.setItem("deliveryDetails", fullName + " | " + phone + " | " + pickup + " → " + delivery + " | " + details);
+    alert("Delivery request sent!");
+    }
+  </script>
+</body>
+</html>

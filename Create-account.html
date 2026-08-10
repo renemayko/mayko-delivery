@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Account - Mayko Delivery</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>🚚 Mayko Delivery</h1>
+
+<h2>Create Account</h2>
+
+<form>
+
+<input type="text" id="fullName" placeholder="Full Name"><br><br>
+
+<input type="email" id="email" placeholder="Email"><br><br>
+
+<input type="tel" id="phone" placeholder="Phone Number"><br><br>
+
+<input type="password" id="password" placeholder="Password"><br><br>
+
+<label>Account Type:</label><br>
+  
+ <select id="accountType">
+    <option>Customer</option>
+    <option>Driver</option>
+    <option>Merchant</option>
+</select>
+
+<br><br>
+
+<button type="button" onclick="createAccount()">Create Account</button>
+
+</form>
+
+<br>
+
+<a href="Login.html">Back to Login</a>
+
+<br><br>
+
+<a href="index.html">Back Home</a>
+
+<script>
+function createAccount() {
+let fullName = document.getElementById("fullName").value;
+ let email = document.getElementById("email").value; 
+  let phone = document.getElementById("phone").value;
+  let password = document.getElementById("password").value;
+  let accountType = document.getElementById("accountType").value;
+  
+if (fullName == "" || email == "" || phone == "" || password == "") {
+    alert("Please fill in all fields.");
+    return;
+}
+localStorage.setItem("userName", fullName);   
+localStorage.setItem("userEmail", email);
+
+
+  localStorage.setItem("userPhone", phone);
+localStorage.setItem("userAccountType", accountType);
+  localStorage.setItem("userPassword", password);
+let users = JSON.parse(localStorage.getItem("users")) || [];
+  users.push({ fullName, email, phone, accountType, password });
+  localStorage.setItem("users", JSON.stringify(users));
+  if (accountType == "Customer") {
+        window.location.href = "request-delivery.html";
+    }
+
+    else if (accountType == "Driver") {
+        window.location.href = "Driver-dashboard.html";
+    }
+
+    else if (accountType == "Merchant") {
+        window.location.href = "Merchant-dashboard.html";
+    }
+
+}
+</script>
+
+</body>
+</html>

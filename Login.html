@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mayko Delivery</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>🚚 Mayko Delivery</h1>
+
+    <h2>Login</h2>
+
+    <form>
+        <input type="email" id="email" placeholder="Email" required>
+        <br><br>
+
+        <input type="password" id="password" placeholder="Password" required>
+        <br><br>
+
+        <button type="button" onclick="login()">Login</button>
+    </form>
+
+    <p>Don't have an account?</p>
+    <a href="Create-account.html">Create Account</a>
+
+<script>
+
+function login() {
+  
+
+
+    let email = document.getElementById("email").value;
+    let password = document.getElementById("password").value;
+let users = JSON.parse(localStorage.getItem("users")) || [];
+  let user = users.find(u => u.email === email && u.password === password);
+  if (user) {
+        if (user.accountType == "Customer") {
+    window.location.href = "request-delivery.html";
+}
+    
+ else if (user.accountType == "Driver") {   
+    window.location.href = "Driver-dashboard.html";
+}  
+else if (user.accountType == "Merchant") {
+    window.location.href = "Merchant-dashboard.html";
+}
+  }
+else if (email == "admin@mayko.com" &&
+password == "1234") {
+    window.location.href = "Admin-dashboard.html";
+}
+  else {
+alert("Incorrect email or password");
+}
+
+
+}
+</script>
+
+</body>
+
+</html>
