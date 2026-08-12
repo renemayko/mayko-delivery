@@ -40,6 +40,7 @@
     let delivery = document.getElementById("delivery").value;
     let details = document.getElementById("details").value;
     localStorage.setItem("deliveryDetails", fullName + " | " + phone + " | " + pickup + " → " + delivery + " | " + details);
+   localStorage.setItem("deliveryStatus","available");
     alert("Delivery request sent!");
     }
   </script>

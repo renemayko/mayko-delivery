@@ -43,9 +43,9 @@ function toggleOnline() {
 }
 
 let savedStatus = localStorage.getItem("driverStatus");
-  let deliveryStatus = localStorage.getItem("deliveryStatus");
-  let deliveryDetails = localStorage.getItem("deliveryDetails");
-let savedEarnings = Number(localStorage.getItem("earnings")) || 0;
+  let deliveryStatus = localStorage.getItem("EStatus");
+let savedEarnings = Number(localStorage.getItem("driverEarning")) || 0;
+
   document.getElementById("earnings").innerText = "$" + savedEarnings.toFixed(2);
 if (savedStatus === "online") {
   
@@ -59,7 +59,7 @@ document.getElementById("acceptDeliveryButton").style.display = "none";
 if (deliveryStatus === "available" && savedStatus === "online") {
   
   document.getElementById("deliveryStatus").innerText = "📦 New Delivery Available";
-  document.getElementById("deliveryDetails").innerText = deliveryDetails;
+  document.getElementById("deliveryDetails").innerText = "pickup: Store - Delivery: Customer";
   document.getElementById("acceptDeliveryButton").style.display = "inline-block";
 }
   else if (deliveryStatus === "completed") {
