@@ -26,6 +26,7 @@
     <input type="text" id="details" placeholder="Package / Order Details"><br><br>
 
     <button type="submit">Request Delivery</button>
+    <p id="distanceDisplay">Distance: -- miles</p>
 
 </form>
 
@@ -97,6 +98,11 @@ const routingControl = L.Routing.control({
         return null;
     }
 }).addTo(map); 
+ routingControl.on('routesfound', function(e) {
+    const distanceMiles = e.routes[0].summary.totalDistance / 1609.344;
+    console.log("Distance:", distanceMiles.toFixed(2), "miles");
+    document.getElementById("distanceDisplay").textContent = "Distance: " + distanceMiles.toFixed(2) + " miles";
+});
  </script>
 
 </body>
