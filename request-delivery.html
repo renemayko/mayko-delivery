@@ -27,6 +27,7 @@
 
     <button type="submit">Request Delivery</button>
     <p id="distanceDisplay">Distance: -- miles</p>
+    <p id="priceDisplay">Estimated delivery price: --</p>
 
 </form>
 
@@ -100,6 +101,8 @@ const routingControl = L.Routing.control({
 }).addTo(map); 
  routingControl.on('routesfound', function(e) {
     const distanceMiles = e.routes[0].summary.totalDistance / 1609.344;
+    const deliveryPrice = 3.00 + (distanceMiles * 1.50);
+    document.getElementById("priceDisplay").textContent = "Estimated delivery price: $" + deliveryPrice.toFixed(2);
     console.log("Distance:", distanceMiles.toFixed(2), "miles");
     document.getElementById("distanceDisplay").textContent = "Distance: " + distanceMiles.toFixed(2) + " miles";
 });
