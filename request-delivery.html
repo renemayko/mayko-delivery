@@ -4,6 +4,7 @@
     <title>Request Delivery - Mayko Delivery</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 </head>
 
 <body>
@@ -47,6 +48,7 @@
   </script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 <script>
 
     const map = L.map('map').setView([32.7948,-116.9625],13);
@@ -81,8 +83,21 @@ const deliveryMarker = L.marker([32.8050, -116.9500])
     pickupMarker.getLatLng(),
     deliveryMarker.getLatLng()
 ]).addTo(map);
+const pickup = pickupMarker.getLatLng();
+const delivery = deliveryMarker.getLatLng();
+map.removeLayer(routeLine);
 
-  </script>
+const routingControl = L.Routing.control({
+    waypoints: [pickup, delivery],
+    addWaypoints: false,
+    draggableWaypoints: false,
+    routeWhileDragging: false,
+    show: false,
+    createMarker: function () {
+        return null;
+    }
+}).addTo(map); 
+ </script>
 
 </body>
 </html>
