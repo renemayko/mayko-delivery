@@ -3,6 +3,7 @@
 <head>
     <title>Request Delivery - Mayko Delivery</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 
 <body>
@@ -20,7 +21,7 @@
     <input type="text" id="pickup" placeholder="Pickup Address"><br><br>
 
     <input type="text"  id="delivery" placeholder="Delivery Address"><br><br>
-
+<div id="map"></div>
     <input type="text" id="details" placeholder="Package / Order Details"><br><br>
 
     <button type="submit">Request Delivery</button>
@@ -28,7 +29,7 @@
 </form>
 
 <br>
-
+<div id="map"></div>
 <a href="index.html">Back Home</a>
 <script>
   function requestDelivery(event) {
@@ -43,6 +44,32 @@
    localStorage.setItem("deliveryStatus","available");
     alert("Delivery request sent!");
     }
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</script>
+<script>
+    const map = L.map('map').setView([32.7948,-116.9625],13);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            map.setView([latitude, longitude], 15);
+
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup("You are here")
+                .openPopup();
+        },
+        function(error) {
+            console.log("GPS error:", error);
+        }
+    );
+} else {
+    console.log("Geolocation is not supported by this browser.");
+}
   </script>
 </body>
 </html>
