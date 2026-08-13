@@ -48,6 +48,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </script>
 <script>
+
     const map = L.map('map').setView([32.7948,-116.9625],13);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     if (navigator.geolocation) {
@@ -70,6 +71,18 @@
 } else {
     console.log("Geolocation is not supported by this browser.");
 }
+const pickupMarker = L.marker([32.7948, -116.9625])
+    .addTo(map)
+    .bindPopup("Pickup Location");
+const deliveryMarker = L.marker([32.8050, -116.9500])
+    .addTo(map)
+    .bindPopup("Delivery Location");
+    const routeLine = L.polyline([
+    pickupMarker.getLatLng(),
+    deliveryMarker.getLatLng()
+]).addTo(map);
+
   </script>
+
 </body>
 </html>
