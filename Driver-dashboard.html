@@ -25,9 +25,37 @@
 <h3>Earnings</h3>
 
 <p id="earnings">$0.00</p>
+<div id="orderDetails">
+  <p>Order ID: <span id="orderId"></span></p>
+  <p>Distance: <span id="distance"></span></p>
+  <p>Price: <span id="price"></span></p>
+  <p>Driver Pay: <span id="driverPay"></span></p>
+  <p>Pickup: <span id="pickup"></span></p>
+  <p>Dropoff: <span id="dropoff"></span></p>
+  <p>Delivery Type: <span id="orderDeliveryType"></span></p>
+  <p>Status: <span id="orderStatus"></span></p>
+  <p>Package: <span id="packageType"></span></p>
+  <p>Notes: <span id="orderNotes"></span></p>
+
+</div>
 
 <a href="index.html">Back Home</a>
 <script>
+  const order = JSON.parse(localStorage.getItem("maykoCurrentOrder"));
+  if (order) {
+    document.getElementById("orderId").innerText = localStorage.getItem("deliveryId");
+    document.getElementById("distance").innerText = localStorage.getItem("deliveryDistance");
+    document.getElementById("price").innerText = localStorage.getItem("deliveryPrice");
+    document.getElementById("driverPay").innerText = order.driverPay;
+    document.getElementById("pickup").innerText = order.pickup;
+    document.getElementById("dropoff").innerText = order.delivery;
+    }
+    if (order) {
+      console.log("Current order loaded:", order);
+      }
+      if (!order) {
+        console.log("No current order found");
+        }
 function toggleOnline() {
     let button = document.getElementById("onlineButton");
 
@@ -41,13 +69,45 @@ function toggleOnline() {
         localStorage.setItem("driverStatus", "offline");
     }
 }
+let driverStatus = localStorage.getItem("driverStatus");
+if (driverStatus === "online") {
+document.getElementById("driverStatusText").innerText = "🟢 You are Online";
+document.getElementById("onlineButton").innerText = "Go Offline";
+document.getElementById("onlineButton").style.backgroundColor = "green";
+}
+  let deliveryStatus = localStorage.getItem("deliveryStatus");
+  console.log("Delivery status:", deliveryStatus);
+let pickupAddress = localStorage.getItem("deliveryPickup");
+  let savedEarnings = Number(localStorage.getItem("driverEarning")) || 0;
+  let deliveryAddress = localStorage.getItem("deliveryAddress");
+  let deliveryDistance = localStorage.getItem("deliveryDistance");
+  let deliveryPrice = localStorage.getItem("deliveryPrice");
+  let driverPay = localStorage.getItem("driverPay");
+  let companyShare = localStorage.getItem("companyShare");
+  let customerPrice = localStorage.getItem("deliveryPrice");
+  let pickupToShow = pickupAddress || "Not available";
+  let deliveryToShow = deliveryAddress || "Not available";
+  let distanceToShow = deliveryDistance || "Not available";
+  let priceToShow = customerPrice || "Not available";
+  let driverPayToShow = driverPay || "Not available";
+  let companyShareToShow = companyShare || "Not available";
+  document.getElementById("pickup").innerText = pickupToShow;
+  document.getElementById("dropoff").innerText = deliveryToShow;
+  document.getElementById("orderStatus").innerText = "Waiting for driver"
+  document.getElementById("distance").innerText = distanceToShow;
+  document.getElementById("price").innerText = "$" + priceToShow;
+  document.getElementById("driverPay").innerText = "$" + driverPayToShow;
+  //document.getElementById("companyShare").innerText = "$" + companyShareToShow;
+  //document.getElementById("status").innerText = "Available";
+  document.getElementById("orderStatus").innerText = "Waiting for driver";
+  document.getElementById("orderDeliveryType").innerText = "Standard Delivery";
+  document.getElementById("paymentStatus").innerText = "Pending";
 
-let savedStatus = localStorage.getItem("driverStatus");
-  let deliveryStatus = localStorage.getItem("EStatus");
-let savedEarnings = Number(localStorage.getItem("driverEarning")) || 0;
+  document.getElementById("paymentMethod").innerText = "Card";
+  document.getElementById("orderId").innerText = "MD-1001";
 
   document.getElementById("earnings").innerText = "$" + savedEarnings.toFixed(2);
-if (savedStatus === "online") {
+if (driverStatus === "online") {
   
 document.getElementById("driverStatusText").innerText = "🟢 You are Online";
     document.getElementById("onlineButton").innerText = "Go Offline";
@@ -74,18 +134,20 @@ function acceptDelivery() {
   
   
   alert("Delivery accepted!");
-  if (deliveryStatus === "available") {
+  localStorage.setItem("deliveryStatus", "accepted");
   document.getElementById("deliveryStatus").innerText = "🚚 Delivery Accepted - In Progress";
   document.getElementById("acceptDeliveryButton").innerText = "Complete Delivery";
   document.getElementById("acceptDeliveryButton").onclick = completeDelivery;
 }
-  }
+  
 
 function completeDelivery() {
 alert("Delivery completed!");
   localStorage.setItem("deliveryStatus", "completed");
+  localStorage.setItem("deliveryCompletedAt", new Date().toISOString());
+  localStorage.setItem("completedDeliveryId", localStorage.getItem("deliveryId") || "");
   let earnings = Number(localStorage.getItem("earnings")) || 0;
-  earnings = earnings + 10;
+  earnings = earnings + Number(driverPay || 0);
   localStorage.setItem("earnings", earnings);
   document.getElementById("earnings").innerText = "$" + earnings.toFixed(2);
   document.getElementById("deliveryStatus").innerText = "✅ Delivery Completed";
