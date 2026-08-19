@@ -28,7 +28,26 @@
     <option>Driver</option>
     <option>Merchant</option>
 </select>
+<div id="driverVerification" style="display:none;">
+    <label>Driver License:</label><br>
+    <input type="text" id="driverLicense"><br>
 
+    <label>License Expiration:</label><br>
+    <input type="date" id="licenseExpiration"><br>
+
+    <label>SSN:</label><br>
+    <input type="text" id="driverSSN"><br><br>
+    <label>Vehicle Make:</label><br>
+<input type="text" id="vehicleMake"><br><br>
+<label>Vehicle Model:</label><br>
+<input type="text" id="vehicleModel"><br><br>
+<label>Vehicle Year:</label><br>
+<input type="number" id="vehicleYear"><br><br>
+<label>Vehicle Color:</label><br>
+<input type="text" id="vehicleColor"><br><br>
+<label>Plate Number:</label><br>
+<input type="text" id="vehiclePlate"><br><br>
+</div>
 <br><br>
 
 <button type="button" onclick="createAccount()">Create Account</button>
@@ -44,12 +63,49 @@
 <a href="index.html">Back Home</a>
 
 <script>
+    
+
+document.getElementById("accountType").addEventListener("change", function () {
+    const driverVerification = document.getElementById("driverVerification");
+
+    if (this.value === "Driver") {
+        driverVerification.style.display = "block";
+    } else {
+        driverVerification.style.display = "none";
+    }
+});
+
+
 function createAccount() {
 let fullName = document.getElementById("fullName").value;
  let email = document.getElementById("email").value; 
   let phone = document.getElementById("phone").value;
   let password = document.getElementById("password").value;
   let accountType = document.getElementById("accountType").value;
+  let driverLicense = document.getElementById("driverLicense").value;
+  let licenseExpiration = document.getElementById("licenseExpiration").value;
+  let driverSSN = document.getElementById("driverSSN").value;
+  let vehicleMake = document.getElementById("vehicleMake").value;
+  let vehicleModel = document.getElementById("vehicleModel").value;
+  let vehicleYear = document.getElementById("vehicleYear").value;
+  let vehicleColor = document.getElementById("vehicleColor").value;
+  let vehiclePlate = document.getElementById("vehiclePlate").value;
+  if (accountType === "Driver") {
+    if (
+        driverLicense === "" ||
+        licenseExpiration === "" ||
+        driverSSN === "" ||
+        vehicleMake === "" ||
+        vehicleModel === "" ||
+        vehicleYear === "" ||
+        vehicleColor === "" ||
+        vehiclePlate === ""
+    ) {
+        alert("Please fill in all driver verification fields.");
+        return;
+    }
+}
+  
   
 if (fullName == "" || email == "" || phone == "" || password == "") {
     alert("Please fill in all fields.");
@@ -66,14 +122,17 @@ let users = JSON.parse(localStorage.getItem("users")) || [];
   users.push({ fullName, email, phone, accountType, password });
   localStorage.setItem("users", JSON.stringify(users));
   if (accountType == "Customer") {
+  localStorage.setItem("customerCount", Number(localStorage.getItem("customerCount") || 0) + 1);
         window.location.href = "request-delivery.html";
     }
 
     else if (accountType == "Driver") {
+    localStorage.setItem("driverCount", Number(localStorage.getItem("driverCount") || 0) + 1);
         window.location.href = "Driver-dashboard.html";
     }
 
     else if (accountType == "Merchant") {
+    localStorage.setItem("merchantCount", Number(localStorage.getItem("merchantCount") || 0) + 1);
         window.location.href = "Merchant-dashboard.html";
     }
 

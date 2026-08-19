@@ -78,7 +78,7 @@ document.getElementById("onlineButton").style.backgroundColor = "green";
   let deliveryStatus = localStorage.getItem("deliveryStatus");
   console.log("Delivery status:", deliveryStatus);
 let pickupAddress = localStorage.getItem("deliveryPickup");
-  let savedEarnings = Number(localStorage.getItem("driverEarning")) || 0;
+  let deliveryType = localStorage.getItem("deliveryType");
   let deliveryAddress = localStorage.getItem("deliveryAddress");
   let deliveryDistance = localStorage.getItem("deliveryDistance");
   let deliveryPrice = localStorage.getItem("deliveryPrice");
@@ -101,11 +101,12 @@ let pickupAddress = localStorage.getItem("deliveryPickup");
   //document.getElementById("status").innerText = "Available";
   document.getElementById("orderStatus").innerText = "Waiting for driver";
   document.getElementById("orderDeliveryType").innerText = "Standard Delivery";
-  document.getElementById("paymentStatus").innerText = "Pending";
+  
 
-  document.getElementById("paymentMethod").innerText = "Card";
+  
   document.getElementById("orderId").innerText = "MD-1001";
 
+ const savedEarnings = parseFloat(localStorage.getItem("driverEarnings")) || 0; 
   document.getElementById("earnings").innerText = "$" + savedEarnings.toFixed(2);
 if (driverStatus === "online") {
   
@@ -114,7 +115,7 @@ document.getElementById("driverStatusText").innerText = "🟢 You are Online";
 }
   
 
-
+const savedStatus = localStorage.getItem("driverStatus");
 document.getElementById("acceptDeliveryButton").style.display = "none";
 if (deliveryStatus === "available" && savedStatus === "online") {
   
@@ -143,17 +144,33 @@ function acceptDelivery() {
 
 function completeDelivery() {
 alert("Delivery completed!");
+const driverPay = Number(localStorage.getItem("driverPay")) || 0;
+let earnings = Number(localStorage.getItem("earnings")) || 0;
   localStorage.setItem("deliveryStatus", "completed");
   localStorage.setItem("deliveryCompletedAt", new Date().toISOString());
   localStorage.setItem("completedDeliveryId", localStorage.getItem("deliveryId") || "");
-  let earnings = Number(localStorage.getItem("earnings")) || 0;
-  earnings = earnings + Number(driverPay || 0);
+  earnings = earnings + driverPay;
+  const currentOrder = JSON.parse(localStorage.getItem("maykoCurrentOrder"));
+  const saleAmount = Number(currentOrder?.merchantSale || 0);
+  const commissionAmount = saleAmount * 0.18;
+  const merchantNet = saleAmount - commissionAmount;
+  let adminRevenue = Number(localStorage.getItem("adminRevenue")) || 0;
+  adminRevenue = adminRevenue + commissionAmount;
+  localStorage.setItem("adminRevenue", adminRevenue);
   localStorage.setItem("earnings", earnings);
   document.getElementById("earnings").innerText = "$" + earnings.toFixed(2);
   document.getElementById("deliveryStatus").innerText = "✅ Delivery Completed";
   document.getElementById("acceptDeliveryButton").style.display = "none";
   document.getElementById("deliveryDetails").innerText = ""; localStorage.removeItem("deliveryDetails");
   }
+  let merchantStatus = localStorage.getItem("orderStatus");
+  if (merchantStatus === "merchantAccepted") {
+  document.getElementById("deliveryDetails").innerText = "Merchant accepted the order. Ready for driver.";
+  }
+  if (merchantStatus !== "merchantAccepted") {
+  document.getElementById("deliveryDetails").innerText = "Waiting for merchant to accept the order.";
+  }
+
 </script>
 </body>
 </html>

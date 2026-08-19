@@ -15,19 +15,32 @@
 
 
 <h3>Users</h3>
-<p>customers: 0</p>
-<p> Drivers: 0</p>
-<p>Merchants: 0</p>
+<p>Customers: <span id="customerCount">0</span></p>
+<p>Drivers: <span id="driverCount">0</span></p>
+<p>Merchants: <span id="merchantCount">0</span></p>
 
 <h3>Deliveries</h3>
 
-<p>Active Deliveries: 0</p>
+<p>Active Deliveries: <span id="activeDeliveries">0</span></p>
 
 <h3>Revenue</h3>
 
-<p>$0.00</p>
+<p id="adminRevenue">$0.00</p>
 
 <a href="index.html">Back Home</a>
-
+<script>
+const currentOrder = JSON.parse(localStorage.getItem("maykoCurrentOrder"));
+const adminRevenue = Number(localStorage.getItem("adminRevenue")) || 0;
+document.getElementById("adminRevenue").innerText = "$" + adminRevenue.toFixed(2);
+const deliveryStatus = localStorage.getItem("deliveryStatus");
+const activeDeliveries = currentOrder && deliveryStatus !== "completed" ? 1 : 0;
+document.getElementById("activeDeliveries").innerText = activeDeliveries;
+const customerCount = Number(localStorage.getItem("customerCount") || 0);
+document.getElementById("customerCount").innerText = customerCount;
+const driverCount = Number(localStorage.getItem("driverCount") || 0);
+document.getElementById("driverCount").innerText = driverCount;
+const merchantCount = Number(localStorage.getItem("merchantCount") || 0);
+document.getElementById("merchantCount").innerText = merchantCount;
+</script>
 </body>
 </html>

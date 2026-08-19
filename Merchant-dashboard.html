@@ -15,17 +15,59 @@
 
 <h3>Orders</h3>
 
-<p>No orders available yet.</p>
+<p id="merchantOrders">No orders available yet.</p>
+<button id="acceptOrderBtn">Accept Order</button>
 
 <h3>Store Information</h3>
 
 <p>Your store is ready to be connected.</p>
+<label>Store Name:</label> <input type="text" id="storeName" placeholder="Enter store name">
+<label>Store Address:</label> <input type="text" id="storeAddress" placeholder="Enter store address">
+<label>Store Phone:</label> <input type="tel" id="storePhone" placeholder="Enter store phone">
+<button id="saveStoreBtn">Save Store Information</button>
 
 <h3>Sales</h3>
 
-<p>$0.00</p>
+<p id="salesAmount">$0.00</p>
+<p id="commissionAmount">Mayko Commission: $0.00</p>
+<p id="merchantNet">Merchant Net: $0.00</p>
 
 <a href="index.html">Back Home</a>
-
+<script>
+const currentOrder = JSON.parse(localStorage.getItem("maykoCurrentOrder"));
+const commissionRate = 0.18;
+if (currentOrder) {
+    const saleAmount = Number(currentOrder.merchantSale || 0);
+    const commissionAmount = saleAmount * commissionRate;
+    const merchantNet = saleAmount - commissionAmount;
+    document.getElementById("salesAmount").innerText = "$" + saleAmount.toFixed(2);
+    document.getElementById("commissionAmount").innerText = "Mayko Commission: $" + commissionAmount.toFixed(2);
+    document.getElementById("merchantNet").innerText = "Merchant Net: $" + merchantNet.toFixed(2);
+    document.getElementById("merchantOrders").textContent = "New order received!";
+ document.getElementById("merchantOrders").style.color = "green";   
+ document.getElementById("merchantOrders").style.fontWeight = "bold";
+ localStorage.setItem("orderStatus", "merchantReceived");
+ localStorage.setItem("merchantNotification", "New order received!");
+ console.log(currentOrder);
+}
+document.getElementById("acceptOrderBtn").addEventListener("click", function() {
+localStorage.setItem("orderStatus", "merchantAccepted");
+document.getElementById("merchantOrders").textContent = "Order accepted by merchant!";
+});
+document.getElementById("saveStoreBtn").addEventListener("click", function() {
+const storeName = document.getElementById("storeName").value;
+const storeAddress = document.getElementById("storeAddress").value;
+const storePhone = document.getElementById("storePhone").value;
+const storeInfo = { storeName, storeAddress, storePhone };
+localStorage.setItem("maykoStoreInfo", JSON.stringify(storeInfo));
+alert("Store information saved successfully!");
+});
+const savedStoreInfo = JSON.parse(localStorage.getItem("maykoStoreInfo"));
+if (savedStoreInfo) {
+document.getElementById("storeName").value = savedStoreInfo.storeName;
+document.getElementById("storeAddress").value = savedStoreInfo.storeAddress;
+document.getElementById("storePhone").value = savedStoreInfo.storePhone;
+}
+</script>
 </body>
 </html>

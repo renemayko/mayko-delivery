@@ -24,7 +24,7 @@
     <input type="text"  id="delivery" placeholder="Delivery Address"><br><br>
 <div id="map"></div>
     <input type="text" id="details" placeholder="Package / Order Details"><br><br>
-
+<input type="number" id="merchantSale" placeholder="Purchase Amount ($)" min="0" step="0.01"><br><br>
     <button type="submit">Request Delivery</button>
     <p id="distanceDisplay">Distance: -- miles</p>
     <p id="priceDisplay">Estimated delivery price: --</p>
@@ -78,20 +78,22 @@
     map.invalidateSize();
     const distance = calculateDistance(pickupCoords, deliveryCoords);
     console.log("DISTANCE TEST:", distance);
-    const deliveryPrice = calculatePrice(distance);
+    const deliveryPrice = parseFloat(document.getElementById("priceDisplay").textContent.replace(/[^0-9.]/g, ""));
     localStorage.setItem("deliveryPrice", deliveryPrice);
-    localStorage.setItem("deliveryDistance", distance.toFixed(2));
+    
     
     localStorage.setItem("deliveryPickup", pickup);
     localStorage.setItem("deliveryAddress", delivery);
     localStorage.setItem("deliveryPhone", phone);
     localStorage.setItem("deliveryName", fullName);
     localStorage.setItem("deliveryCreatedAt", new Date().toISOString());
+    
     localStorage.setItem("deliveryId", "MD-" + Date.now());
     localStorage.setItem("maykoCurrentOrder", JSON.stringify({
     orderId: localStorage.getItem("deliveryId"),
     distance: distance.toFixed(2),
     totalPrice: deliveryPrice,
+    merchantSale: Number(document.getElementById("merchantSale").value || 0),
     driverPay: localStorage.getItem("driverPay"),
     pickup: pickup,
     delivery: delivery
