@@ -52,6 +52,8 @@ if (currentOrder) {
 }
 document.getElementById("acceptOrderBtn").addEventListener("click", function() {
 localStorage.setItem("orderStatus", "merchantAccepted");
+localStorage.setItem("deliveryStatus", "available");
+
 document.getElementById("merchantOrders").textContent = "Order accepted by merchant!";
 });
 document.getElementById("saveStoreBtn").addEventListener("click", function() {

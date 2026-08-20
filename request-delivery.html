@@ -28,6 +28,7 @@
     <button type="submit">Request Delivery</button>
     <p id="distanceDisplay">Distance: -- miles</p>
     <p id="priceDisplay">Estimated delivery price: --</p>
+    <p>Order Status: <span id="customerOrderStatus">Not Requested</span></p>
 
 </form>
 
@@ -63,6 +64,7 @@
 
     event.preventDefault();
     localStorage.setItem("deliveryStatus", "available");
+    document.getElementById("customerOrderStatus").textContent = "Requested";
     
     let fullName = document.getElementById("fullName").value;
     let phone = document.getElementById("phone").value;
@@ -80,6 +82,7 @@
     console.log("DISTANCE TEST:", distance);
     const deliveryPrice = parseFloat(document.getElementById("priceDisplay").textContent.replace(/[^0-9.]/g, ""));
     localStorage.setItem("deliveryPrice", deliveryPrice);
+    localStorage.setItem("paymentStatus", "pending");
     
     
     localStorage.setItem("deliveryPickup", pickup);
@@ -99,6 +102,7 @@
     delivery: delivery
 }));
     let details = document.getElementById("details").value;
+// if (localStorage.getItem("paymentStatus") !== "paid") return;    
     localStorage.setItem("deliveryDetails", fullName + " | " + phone + " | " + pickup + " → " + delivery + " | " + details);
    localStorage.setItem("deliveryStatus","available");
     alert("Delivery request sent!");
@@ -177,6 +181,17 @@ const routingControl = L.Routing.control({
    localStorage.setItem("deliveryDistance", distanceMiles.toFixed(2));
     document.getElementById("distanceDisplay").textContent = "Distance: " + distanceMiles.toFixed(2) + " miles";
 });
+const customerSavedStatus = localStorage.getItem("orderStatus");
+if (customerSavedStatus === "merchantAccepted") {
+document.getElementById("customerOrderStatus").textContent = "Merchant Accepted";
+}
+const customerDeliveryStatus = localStorage.getItem("deliveryStatus");
+if (customerDeliveryStatus === "accepted") {
+document.getElementById("customerOrderStatus").textContent = "In Progress";
+}
+if (customerDeliveryStatus === "completed") {
+document.getElementById("customerOrderStatus").textContent = "Completed";
+}
  </script>
 
 </body>

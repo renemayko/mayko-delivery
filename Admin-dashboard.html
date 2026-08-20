@@ -21,6 +21,9 @@
 <h3>Driver Verification</h3>
 <p>Status: <span id="driverApprovalStatus">Pending</span></p>
 <button type="button" onclick="approveDriver()">Approve Driver</button>
+<h3>Merchant Verification</h3>
+<p>Status: <span id="merchantApprovalStatus">Pending</span></p>
+<button type="button" onclick="approveMerchant()">Approve Merchant</button>
 
 <br><br>
 
@@ -46,10 +49,20 @@ const driverCount = Number(localStorage.getItem("driverCount") || 0);
 document.getElementById("driverCount").innerText = driverCount;
 const merchantCount = Number(localStorage.getItem("merchantCount") || 0);
 document.getElementById("merchantCount").innerText = merchantCount;
+const savedMerchantApproval = localStorage.getItem("merchantApprovalStatus") || "Pending";
+document.getElementById("merchantApprovalStatus").textContent = savedMerchantApproval;
+let savedDriverApproval = localStorage.getItem("driverApprovalStatus");
+if (savedDriverApproval === "Approved") document.getElementById("driverApprovalStatus").textContent = "Approved";
 function approveDriver() {
     localStorage.setItem("driverApprovalStatus", "Approved");
     document.getElementById("driverApprovalStatus").textContent = "Approved";
     alert("Driver approved successfully.");
+}
+
+function approveMerchant() {
+localStorage.setItem("merchantApprovalStatus", "Approved");
+document.getElementById("merchantApprovalStatus").textContent = "Approved";
+alert("Merchant approved successfully.");
 }
 </script>
 </body>

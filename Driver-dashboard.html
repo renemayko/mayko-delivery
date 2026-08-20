@@ -57,6 +57,8 @@
         console.log("No current order found");
         }
 function toggleOnline() {
+const driverApproval = localStorage.getItem("driverApprovalStatus");
+if (driverApproval !== "Approved") { alert("Driver must be approved before going online."); return; }
     let button = document.getElementById("onlineButton");
 
     if (button.innerText === "Go Online") {
