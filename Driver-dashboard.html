@@ -31,6 +31,7 @@
   <p>Price: <span id="price"></span></p>
   <p>Driver Pay: <span id="driverPay"></span></p>
   <p>Pickup: <span id="pickup"></span></p>
+  <p>Pickup Name / Store Order Number: <span id="pickupReference"></span></p>
   <p>Dropoff: <span id="dropoff"></span></p>
   <p>Delivery Type: <span id="orderDeliveryType"></span></p>
   <p>Status: <span id="orderStatus"></span></p>
@@ -47,7 +48,9 @@
     document.getElementById("distance").innerText = localStorage.getItem("deliveryDistance");
     document.getElementById("price").innerText = localStorage.getItem("deliveryPrice");
     document.getElementById("driverPay").innerText = order.driverPay;
+    document.getElementById("pickupReference").innerText = order.pickupReference || "";
     document.getElementById("pickup").innerText = order.pickup;
+
     document.getElementById("dropoff").innerText = order.delivery;
     }
     if (order) {
@@ -119,7 +122,7 @@ document.getElementById("driverStatusText").innerText = "🟢 You are Online";
 
 const savedStatus = localStorage.getItem("driverStatus");
 document.getElementById("acceptDeliveryButton").style.display = "none";
-if (deliveryStatus === "available" && savedStatus === "online") {
+if (deliveryStatus === "available" && savedStatus === "online" && merchantStatus === "merchantAccepted" && paymentStatus === "paid") {
   
   document.getElementById("deliveryStatus").innerText = "📦 New Delivery Available";
   document.getElementById("deliveryDetails").innerText = "pickup: Store - Delivery: Customer";
@@ -166,7 +169,8 @@ let earnings = Number(localStorage.getItem("earnings")) || 0;
   document.getElementById("deliveryDetails").innerText = ""; localStorage.removeItem("deliveryDetails");
   }
   let merchantStatus = localStorage.getItem("orderStatus");
-  if (merchantStatus === "merchantAccepted") {
+  let paymentStatus = localStorage.getItem("paymentStatus");
+  if (merchantStatus === "merchantAccepted" && paymentStatus === "paid") {
   document.getElementById("deliveryDetails").innerText = "Merchant accepted the order. Ready for driver.";
   }
   if (merchantStatus !== "merchantAccepted") {

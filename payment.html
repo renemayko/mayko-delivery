@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Mayko Delivery Payment</title>
+        <body>
+            <h1>Mayko Delivery Payment</h1>
+            <form id="payment-form">
+                <div id="payment-element"></div>
+                <button id="submit">Pay Now</button>
+                <div id="payment-message"></div>
+
+            </form>
+            <script src="https://js.stripe.com/v3/"></script>
+            <script>
+            const clientSecret = sessionStorage.getItem("maykoPaymentClientSecret");
+            const stripe = Stripe("pk_test_51Tz4gcHoHbh0J6ExWAzXlGJdo9ugH3ygByYR8LWDPAakxIGteBMWPqIymw5nVnnUjS8EHdv6GLDL4twKk3xVJPg400myEKggvK");
+            const elements = stripe.elements({ clientSecret });
+            const paymentElement = elements.create("payment");
+            paymentElement.mount("#payment-element");
+            const form = document.getElementById("payment-form");
+           form.addEventListener("submit", async (event) => { 
+            event.preventDefault();
+            const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: window.location.origin + "/payment.html",
+            },
+            redirect: "if_required",
+        });
+        if (error) {
+            document.getElementById("payment-message").textContent = error.message;
+            return;
+        }
+        if (paymentIntent && paymentIntent.status === "succeeded") {
+            localStorage.setItem("paymentStatus", "paid");
+            localStorage.setItem("deliveryStatus", "available");
+            document.getElementById("payment-message").textContent = "Payment successful";
+            }
+        });
+        </script>
+
+
+
+        </body>
+    </head>
+</html>

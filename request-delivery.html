@@ -20,7 +20,7 @@
     <input type="tel" id="phone" placeholder="Phone Number"><br><br>
 
     <input type="text" id="pickup" placeholder="Pickup Address"><br><br>
-
+<input type="text" id="pickupReference" placeholder="Pickup Name or Store Order Number"><br><br>
     <input type="text"  id="delivery" placeholder="Delivery Address"><br><br>
 <div id="map"></div>
     <input type="text" id="details" placeholder="Package / Order Details"><br><br>
@@ -36,19 +36,14 @@
 
 <a href="index.html">Back Home</a>
 <script>
- async function geocode(address) { 
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-  const data = await response.json();
-  if (data.length === 0) return null;  
-  return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-  }
+
   function calculateDistance(coord1, coord2) {
     const R = 3958.8;
     const toRad = value => value * Math.PI / 180;
-    const lat1 = toRad(coord1[0]);
-    const lat2 = toRad(coord2[0]);
+const lat1 = toRad(coord1.lat);
+const lat2 = toRad(coord2.lat);
     const dLat = lat2 - lat1;
-    const dLon = toRad(coord2[1] - coord1[1]);
+    const dLon = toRad(coord2.lng - coord1.lng);
     const a = Math.sin(dLat / 2) ** 2;
     const b = Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a + b), Math.sqrt(1 - a - b));
@@ -60,7 +55,11 @@
     const totalPrice = baseFee + (distance * pricePerMile);
     return totalPrice.toFixed(2);
     }
-    async function requestDelivery(event) {
+    const selectedPickup = localStorage.getItem("selectedPickup");
+    if (selectedPickup) {
+    document.getElementById("pickup").value = selectedPickup;
+      }  
+        async function requestDelivery(event) {
 
     event.preventDefault();
     localStorage.setItem("deliveryStatus", "available");
@@ -73,11 +72,13 @@
     localStorage.setItem("pickupAddress", pickup);
     localStorage.setItem("deliveryAddress", delivery);
     const pickupCoords = await geocodeAddress(pickup);
+    await new Promise(resolve => setTimeout(resolve, 1200));
     const deliveryCoords = await geocodeAddress(delivery);
     pickupMarker.setLatLng(pickupCoords);
     deliveryMarker.setLatLng(deliveryCoords);
     map.fitBounds([pickupCoords, deliveryCoords], { padding: [50, 50] });
     map.invalidateSize();
+    console.log("COORDS:", pickupCoords, deliveryCoords);
     const distance = calculateDistance(pickupCoords, deliveryCoords);
     console.log("DISTANCE TEST:", distance);
     const deliveryPrice = parseFloat(document.getElementById("priceDisplay").textContent.replace(/[^0-9.]/g, ""));
@@ -90,7 +91,7 @@
     localStorage.setItem("deliveryPhone", phone);
     localStorage.setItem("deliveryName", fullName);
     localStorage.setItem("deliveryCreatedAt", new Date().toISOString());
-    
+    localStorage.setItem("paymentStatus", "pending");
     localStorage.setItem("deliveryId", "MD-" + Date.now());
     localStorage.setItem("maykoCurrentOrder", JSON.stringify({
     orderId: localStorage.getItem("deliveryId"),
@@ -99,10 +100,27 @@
     merchantSale: Number(document.getElementById("merchantSale").value || 0),
     driverPay: localStorage.getItem("driverPay"),
     pickup: pickup,
+    pickupReference: document.getElementById("pickupReference").value,
     delivery: delivery
 }));
     let details = document.getElementById("details").value;
-// if (localStorage.getItem("paymentStatus") !== "paid") return;    
+    console.log("REACHED STRIPE FETCH", deliveryPrice);
+    const paymentResponse = await fetch("http://localhost:3000/create-payment-intent", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ amount: deliveryPrice })
+    });
+    const paymentData = await paymentResponse.json();
+if (!paymentResponse.ok || !paymentData.clientSecret) {
+    alert(paymentData.error || "Payment could not be prepared. Please try again.");
+    return;
+}
+sessionStorage.setItem("maykoPaymentClientSecret", paymentData.clientSecret);
+window.location.href = "payment.html";
+return;
+    // if (localStorage.getItem("paymentStatus") !== "paid") return;    
     localStorage.setItem("deliveryDetails", fullName + " | " + phone + " | " + pickup + " → " + delivery + " | " + details);
    localStorage.setItem("deliveryStatus","available");
     alert("Delivery request sent!");
@@ -136,15 +154,15 @@
     console.log("Geolocation is not supported by this browser.");
 }
 async function geocodeAddress(address) {
-    const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(address);
+    const url = `http://localhost:3000/geocode?address=${encodeURIComponent(address)}`;
     const response = await fetch(url);
     const data = await response.json();
 
-    if (data.length === 0) {
+    if (!response.ok) {
         throw new Error("Address not found: " + address);
     }
 
-    return L.latLng(parseFloat(data[0].lat), parseFloat(data[0].lon));
+    return L.latLng(data.lat, data.lng);
 }
 const pickupMarker = L.marker([32.7948, -116.9625])
     .addTo(map)

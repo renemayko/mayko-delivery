@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Mayko Delivery Stores</title>
+
+    </head>
+    <body>
+        <h1>🚚 Mayko Delivery</h1>
+        <h2>Choose a Restaurant or Store</h2>
+        <input type="text" id="storeSearch" placeholder="Search restaurant or store">
+        <div id="storeList">
+            <div class="store-card">
+                <h3>Walmart</h3>
+            <p>Grocery & General Merchandise</p>
+            <p>El Cajon, CA</p>
+            <button onclick="localStorage.setItem('selectedPickup','13487 Camino Canada, El Cajon, CA 92021'); window.location.href='request-delivery.html';">Order</button>   
+            </div>
+            <div class="store-card">
+                <h3>Target</h3>
+                <p>Grocery & General Merchandise</p>
+                <p>El Cajon, CA</p>
+                <button onclick="localStorage.setItem('selectedPickup','250 Broadway, El Cajon, CA 92021'); window.location.href='request-delivery.html';">Order</button>
+                
+                
+        </div>
+            <div class="store-card">
+                <h3>McDonald's</h3>
+                <p>Fast Food Restaurant</p>
+                <p>El Cajon, CA</p>
+                <button onclick="localStorage.setItem('selectedPickup','281 N 2nd St, El Cajon, CA 92021'); window.location.href='request-delivery.html';">Order</button>
+
+            </div>
+        </div>
+<script>
+const searchInput = document.getElementById("storeSearch");
+const storeCards = document.querySelectorAll(".store-card");
+searchInput.addEventListener("input", () => {
+    const searchTerm = searchInput.value.toLowerCase();
+    storeCards.forEach(card => {
+        const storeText = card.innerText.toLowerCase();
+        card.style.display = storeText.includes(searchTerm) ? "block" : "none";
+            });
+        });
+</script>
+    </body>
+</html>
