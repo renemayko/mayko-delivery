@@ -66,6 +66,21 @@ res.json({ lat: Number(data[0].lat), lng: Number(data[0].lon) });
     res.status(500).json({ error: error.message });
 }
 });
+app.get("/test-db", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT NOW()");
+        res.json({
+            success: true,
+            message: "Mayko Delivery database connected",
+            time: result.rows[0].now
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 
 app.listen(PORT, () => {
     console.log("Mayko Delivery API running on port " + PORT);
