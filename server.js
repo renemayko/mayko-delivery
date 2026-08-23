@@ -2,6 +2,25 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const Stripe = require("stripe");
+const { Pool } = require("pg");
+const pool = new Pool({
+connectionString: process.env.DATABASE_URL,
+ssl: { rejectUnauthorized: false },
+
+});
+pool.query("SELECT NOW()")
+  .then(() => console.log("Database connected successfully"))
+  .catch((error) => console.error("Database connection error:", error.message));
+  pool.query(`CREATE TABLE IF NOT EXISTS deliveries (
+  id SERIAL PRIMARY KEY,
+  pickup_address TEXT NOT NULL,
+  delivery_address TEXT NOT NULL,
+  distance NUMERIC,
+  delivery_price NUMERIC,
+  merchant_sale NUMERIC,
+  status TEXT DEFAULT 'available',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );`);  
 const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const app = express();
 app.use(cors());

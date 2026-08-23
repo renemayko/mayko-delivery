@@ -122,7 +122,7 @@ document.getElementById("driverStatusText").innerText = "🟢 You are Online";
 
 const savedStatus = localStorage.getItem("driverStatus");
 document.getElementById("acceptDeliveryButton").style.display = "none";
-if (deliveryStatus === "available" && savedStatus === "online" && merchantStatus === "merchantAccepted" && paymentStatus === "paid") {
+if (deliveryStatus === "available" && savedStatus === "online" && localStorage.getItem("orderStatus") === "merchantAccepted" && localStorage.getItem("paymentStatus") === "paid") {
   
   document.getElementById("deliveryStatus").innerText = "📦 New Delivery Available";
   document.getElementById("deliveryDetails").innerText = "pickup: Store - Delivery: Customer";
