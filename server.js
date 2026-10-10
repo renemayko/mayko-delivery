@@ -1029,7 +1029,37 @@ if (!allowedRoles.includes(role)) {
     });
   }
 });
+app.delete("/auth/account", requireUser, async (req, res) => {
+  try {
+    const userId = req.user.userId;
 
+    const result = await pool.query(
+      `DELETE FROM users
+       WHERE id = $1
+       RETURNING id`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Account deleted successfully."
+    });
+  } catch (error) {
+    console.error("Delete account error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to delete account."
+    });
+  }
+});
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
