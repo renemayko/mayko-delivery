@@ -1179,6 +1179,55 @@ app.post("/driver/status", requireUser, async (req, res) => {
     });
   }
 });
+app.post("/deliveries/:id/accept", requireUser, async (req, res) => {
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({
+      success: false,
+      message: "Driver access only."
+    });
+  }
+
+  const deliveryId = Number(req.params.id);
+
+  if (!Number.isSafeInteger(deliveryId) || deliveryId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid delivery ID."
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE deliveries
+       SET driver_id = $1,
+           status = 'accepted',
+           updated_at = NOW()
+       WHERE id = $2
+         AND status = 'pending'
+         AND driver_id IS NULL
+       RETURNING id, driver_id, status`,
+      [req.user.userId, deliveryId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Delivery is no longer available."
+      });
+    }
+
+    return res.json({
+      success: true,
+      delivery: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Accept delivery error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to accept delivery."
+    });
+  }
+});
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
