@@ -4,6 +4,13 @@ const cors = require("cors");
 const Stripe = require("stripe");
 const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const { createClient } = require("@supabase/supabase-js");
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
 const PAYPAL_SECRET_KEY = process.env.PAYPAL_SECRET_KEY;
 const PAYPAL_BASE_URL = "https://api-m.paypal.com";
@@ -247,7 +254,73 @@ app.get("/auth/me", requireUser, (req, res) => {
     }
   });
 });
+const verificationUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+    ];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Only JPG, PNG, or PDF files are allowed."));
+    }
+    cb(null, true);
+  },
+});
 
+app.post(
+  "/verification/upload",
+  requireUser,
+  verificationUpload.single("document"),
+  async (req, res) => {
+    try {
+      if (!["Driver", "Merchant"].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "Only Driver or Merchant can upload documents.",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No document provided.",
+        });
+      }
+
+      const extension = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "application/pdf": "pdf",
+      }[req.file.mimetype];
+
+      const filePath =
+        `${req.user.userId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+      const { data, error } = await supabase.storage
+        .from("mayko-verification-documents")
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      return res.status(201).json({
+        success: true,
+        documentUrl: data.path,
+      });
+    } catch (error) {
+      console.error("Document upload error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "Document upload failed.",
+      });
+    }
+  }
+);
 app.post("/verification/documents", requireUser, async (req, res) => {
   try {
     const { documentType, documentUrl, last4, expiresAt } = req.body;
@@ -926,7 +999,17 @@ async function ensureUsersTable() {
     ADD COLUMN IF NOT EXISTS verification_status
     TEXT DEFAULT 'pending'
   `);
-    await pool.query(`
+     await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS business_name TEXT
+  `);
+
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS business_address TEXT
+  `);
+  await pool.query(`
+
     CREATE TABLE IF NOT EXISTS verification_documents (
       id SERIAL PRIMARY KEY,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -979,7 +1062,7 @@ await pool.query(`
 ensureUsersTable().catch(console.error);
 
 app.post("/auth/register", async (req, res) => {
-  const { fullName, email, password, role = "Customer" } = req.body;
+  const { fullName, email, password, role = "Customer", businessName, businessAddress } = req.body;
 
   if (!fullName || !email || !password) {
     return res.status(400).json({
@@ -1004,10 +1087,10 @@ if (!allowedRoles.includes(role)) {
   try {
     const result = await pool.query(
       `INSERT INTO users
-      (full_name, email, password_hash, password_salt, role, verification_status)
-      VALUES ($1, $2, $3, $4, $5, CASE WHEN $5 = 'Customer' THEN 'approved' ELSE 'pending' END)
+      (full_name, email, password_hash, password_salt, role, verification_status, business_name, business_address)
+     VALUES ($1, $2, $3, $4, $5, CASE WHEN $5 = 'Customer' THEN 'approved' ELSE 'pending' END, $6, $7)
      RETURNING id, full_name, email, role, verification_status`,
-      [fullName.trim(), normalizedEmail, passwordHash, salt, role]
+      [fullName.trim(), normalizedEmail, passwordHash, salt, role, businessName || null, businessAddress || null]
     );
 
     res.status(201).json({
