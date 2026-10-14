@@ -1009,6 +1009,10 @@ async function ensureUsersTable() {
     ADD COLUMN IF NOT EXISTS business_address TEXT
   `);
   await pool.query(`
+  ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS is_online BOOLEAN NOT NULL DEFAULT FALSE
+`);
+  await pool.query(`
 
     CREATE TABLE IF NOT EXISTS verification_documents (
       id SERIAL PRIMARY KEY,
@@ -1140,6 +1144,38 @@ app.delete("/auth/account", requireUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Unable to delete account."
+    });
+  }
+});
+app.post("/driver/status", requireUser, async (req, res) => {
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({
+      success: false,
+      message: "Driver access only."
+    });
+  }
+
+  const { isOnline } = req.body;
+
+  if (typeof isOnline !== "boolean") {
+    return res.status(400).json({
+      success: false,
+      message: "isOnline must be true or false."
+    });
+  }
+
+  try {
+    await pool.query(
+      "UPDATE users SET is_online = $1 WHERE id = $2",
+      [isOnline, req.user.userId]
+    );
+
+    return res.json({ success: true, isOnline });
+  } catch (error) {
+    console.error("Driver status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update driver status."
     });
   }
 });
