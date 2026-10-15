@@ -1179,6 +1179,41 @@ app.post("/driver/status", requireUser, async (req, res) => {
     });
   }
 });
+app.get("/driver/status", requireUser, async (req, res) => {
+  if (req.user.role !== "Driver") {
+    return res.status(403).json({
+      success: false,
+      message: "Driver access only."
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT is_online FROM users WHERE id = $1 AND role = 'Driver'",
+      [req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Driver not found."
+      });
+    }
+
+    return res.json({
+      success: true,
+      isOnline: result.rows[0].is_online
+    });
+
+  } catch (error) {
+    console.error("Get driver status error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve driver status."
+    });
+  }
+});
 app.post("/deliveries/:id/accept", requireUser, async (req, res) => {
   if (req.user.role !== "Driver") {
     return res.status(403).json({
