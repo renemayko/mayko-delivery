@@ -703,53 +703,416 @@ app.get("/test-paypal", async (req, res) => {
             res.status(500).json({ success: false, error: error.message });
             }
             });
-            app.post("/paypal/create-order", async (req, res) => {
-             try {
-                const accessToken = await getPayPalAccessToken();
-                const response = await fetch("https://api-m.paypal.com/v2/checkout/orders", {
-                    method: "POST",
-                 headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify({
-                        intent: "CAPTURE",
-                        purchase_units: [
-                            {
-                                amount: {
-                                    currency_code: "USD",
-                                    value: req.body.amount,
-                                    },
-                                    }
-                                    ],
-                                    }),
-                                    });
-                                    const order = await response.json();
-                                    const approveLink = order.links.find((link) => link.rel === "approve");
-res.json({ url: approveLink.href, orderID: order.id });
-                                    } catch (error) {
-                                        console.error(error);
-                                        res.status(500).json({ error: "PayPal order creation failed" });
-                                      }
-                                      });        
-app.post("/paypal/capture-order/:orderID", async (req, res) => {
+            app.post("/paypal/create-order", requireUser, async (req, res) => {
+  if (req.user.role !== "Customer") {
+    return res.status(403).json({
+      success: false,
+      message: "Customer access only."
+    });
+  }
+
+  const deliveryId = Number(req.body.deliveryId);
+
+  if (!Number.isSafeInteger(deliveryId) || deliveryId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Valid delivery ID is required."
+    });
+  }
+let paymentLockClient;
+  try {
+  
+
+
+  paymentLockClient = await pool.connect();
+
+  await paymentLockClient.query(
+    "SELECT pg_advisory_lock($1::bigint)",
+    [String(deliveryId)]
+  );
+
+  
+    const result = await pool.query(
+     `SELECT id, estimated_price, payment_status, paypal_order_id, merchant_id, merchant_approved
+       FROM deliveries
+       WHERE id = $1 AND customer_id = $2`,
+      [deliveryId, req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery not found."
+      });
+    }
+
+    const delivery = result.rows[0];
+    if (delivery.merchant_id !== null &&
+    delivery.merchant_approved !== true) {
+  return res.status(409).json({
+    success: false,
+    message: "Merchant must confirm the order before payment."
+  });
+}
+
+    if (delivery.payment_status !== "unpaid") {
+      return res.status(409).json({
+        success: false,
+        message: "Delivery payment is not available."
+      });
+    }
+
+   if (delivery.paypal_order_id) {
+  const accessToken = await getPayPalAccessToken();
+
+  const paypalResponse = await fetch(
+    `${PAYPAL_BASE_URL}/v2/checkout/orders/${encodeURIComponent(delivery.paypal_order_id)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
+
+  if (!paypalResponse.ok) {
+    return res.status(502).json({
+      success: false,
+      message: "Unable to verify existing PayPal payment."
+    });
+  }
+
+  const existingOrder = await paypalResponse.json();
+
+  if (existingOrder.status === "CREATED" ||
+      existingOrder.status === "PAYER_ACTION_REQUIRED" ||
+      existingOrder.status === "SAVED") {
+    const approvalLink = existingOrder.links?.find(
+      link => link.rel === "approve" || link.rel === "payer-action"
+    );
+
+    if (approvalLink?.href) {
+      return res.json({
+        success: true,
+        url: approvalLink.href,
+        orderID: existingOrder.id,
+        deliveryId: deliveryId
+      });
+    }
+  }
+
+    if (existingOrder.status === "VOIDED") {
+    const reset = await pool.query(
+      `UPDATE deliveries
+       SET paypal_order_id = NULL,
+           updated_at = NOW()
+       WHERE id = $1
+         AND customer_id = $2
+         AND payment_status = 'unpaid'
+         AND paypal_order_id = $3
+       RETURNING id`,
+      [deliveryId, req.user.userId, delivery.paypal_order_id]
+    );
+
+    if (reset.rows.length !== 1) {
+      return res.status(409).json({
+        success: false,
+        message: "Payment state changed. Please refresh."
+      });
+    }
+
+    delivery.paypal_order_id = null;
+  } else {
+    return res.status(409).json({
+      success: false,
+      message: "Existing PayPal order requires reconciliation.",
+      orderID: delivery.paypal_order_id,
+      paypalStatus: existingOrder.status
+    });
+  }
+  
+}
+    const amount = Number(delivery.estimated_price);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery amount."
+      });
+    }
+
+    const accessToken = await getPayPalAccessToken();
+
+    const response = await fetch(
+      `${PAYPAL_BASE_URL}/v2/checkout/orders`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              reference_id: String(deliveryId),
+              custom_id: String(deliveryId),
+              amount: {
+                currency_code: "USD",
+                value: amount.toFixed(2)
+              }
+            }
+          ]
+        })
+      }
+    );
+
+    const order = await response.json();
+
+    if (!response.ok || !order.id) {
+      return res.status(502).json({
+        success: false,
+        message: "PayPal order creation failed."
+      });
+    }
+
+    const approvalLink = order.links?.find(
+      link => link.rel === "approve" || link.rel === "payer-action"
+    );
+
+    if (!approvalLink?.href) {
+      return res.status(502).json({
+        success: false,
+        message: "PayPal approval link unavailable."
+      });
+    }
+
+    const saved = await pool.query(
+      `UPDATE deliveries
+       SET paypal_order_id = $1,
+           updated_at = NOW()
+       WHERE id = $2
+         AND customer_id = $3
+         AND payment_status = 'unpaid'
+         AND paypal_order_id IS NULL
+       RETURNING id`,
+      [order.id, deliveryId, req.user.userId]
+    );
+
+    if (saved.rows.length === 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Delivery payment state changed. Please refresh."
+      });
+    }
+
+    return res.json({
+      success: true,
+      url: approvalLink.href,
+      orderID: order.id,
+      deliveryId: deliveryId,
+      amount: amount.toFixed(2)
+    });
+
+  } catch (error) {
+    console.error("PayPal create order error:", error.message);
+
+      return res.status(500).json({
+      success: false,
+      message: "Unable to create PayPal order."
+    });
+  } finally {
+    if (paymentLockClient) {
+      try {
+        await paymentLockClient.query(
+          "SELECT pg_advisory_unlock($1::bigint)",
+          [String(deliveryId)]
+        );
+
+        paymentLockClient.release();
+      } catch (unlockError) {
+        console.error(
+          "PayPal payment lock error:",
+          unlockError.message
+        );
+
+        paymentLockClient.release(true);
+      }
+    }
+  }
+});
+app.post("/paypal/capture-order/:orderID", requireUser, async (req, res) => {
+  if (req.user.role !== "Customer") {
+    return res.status(403).json({
+      success: false,
+      message: "Customer access only."
+    });
+  }
+
+  const { orderID } = req.params;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `SELECT id, estimated_price, payment_status,
+              paypal_order_id, paypal_capture_id
+       FROM deliveries
+       WHERE paypal_order_id = $1
+         AND customer_id = $2
+       FOR UPDATE`,
+      [orderID, req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(404).json({
+        success: false,
+        message: "Payment order not found."
+      });
+    }
+
+    const delivery = result.rows[0];
+
+    if (delivery.payment_status === "paid") {
+      await client.query("COMMIT");
+
+      return res.json({
+        success: true,
+        alreadyPaid: true,
+        deliveryId: delivery.id,
+        paymentStatus: "paid"
+      });
+    }
+
+    if (delivery.payment_status !== "unpaid") {
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        success: false,
+        message: "Payment is not available."
+      });
+    }
+
+    const accessToken = await getPayPalAccessToken();
+
+    const statusResponse = await fetch(
+      `${PAYPAL_BASE_URL}/v2/checkout/orders/${encodeURIComponent(orderID)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    const existingOrder = await statusResponse.json();
+
+    if (!statusResponse.ok) {
+      throw new Error("Unable to verify PayPal order.");
+    }
+
+    let paypalOrder = existingOrder;
+
+    if (existingOrder.status !== "COMPLETED") {
+      if (existingOrder.status !== "APPROVED") {
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          success: false,
+          message: "PayPal payment is not approved."
+        });
+      }
+
+      const response = await fetch(
+        `${PAYPAL_BASE_URL}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+            "PayPal-Request-Id": `mayko-capture-${delivery.id}`
+          }
+        }
+      );
+
+      paypalOrder = await response.json();
+
+      if (!response.ok) {
+        throw new Error("PayPal capture was not confirmed.");
+      }
+    }
+
+    const purchaseUnit = paypalOrder.purchase_units?.[0];
+    const capture = purchaseUnit?.payments?.captures?.[0];
+
+    const expectedAmount = Number(
+      delivery.estimated_price
+    ).toFixed(2);
+
+    const paidAmount = capture?.amount?.value;
+    const currency = capture?.amount?.currency_code;
+
+    if (
+      paypalOrder.id !== orderID ||
+      paypalOrder.status !== "COMPLETED" ||
+      capture?.status !== "COMPLETED" ||
+      !capture?.id ||
+      purchaseUnit?.custom_id !== String(delivery.id) ||
+      currency !== "USD" ||
+      paidAmount !== expectedAmount
+    ) {
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        success: false,
+        message: "PayPal payment verification failed."
+      });
+    }
+
+    const saved = await client.query(
+      `UPDATE deliveries
+       SET payment_status = 'paid',
+           paypal_capture_id = $1,
+           paid_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $2
+         AND paypal_order_id = $3
+         AND payment_status = 'unpaid'
+       RETURNING id, payment_status`,
+      [capture.id, delivery.id, orderID]
+    );
+
+    if (saved.rows.length !== 1) {
+      throw new Error("Unable to save payment confirmation.");
+    }
+
+    await client.query("COMMIT");
+
+    return res.json({
+      success: true,
+      deliveryId: delivery.id,
+      paymentStatus: "paid",
+      captureId: capture.id
+    });
+
+  } catch (error) {
     try {
-        const accessToken = await getPayPalAccessToken();
-        const { orderID } = req.params;
-        const response = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderID}/capture`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-                },
-                });
-                const capture = await response.json();
-                res.json(capture);
-                } catch (error) {
-                    console.error(error);
-                    res.status(500).json({ error: "PayPal capture failed" });
-                    }
-                    });
+      await client.query("ROLLBACK");
+    } catch (_) {}
+
+    console.error("PayPal capture error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to confirm payment. Please check payment status before retrying."
+    });
+
+  } finally {
+    client.release();
+  }
+});
                     app.get("/paypal/order-status/:orderID", async (req, res) => {
   try {
     const accessToken = await getPayPalAccessToken();
@@ -852,11 +1215,18 @@ app.post("/delivery-request", requireUser, async (req, res) => {
   const {
     pickup,
     destination,
+    merchantId,
     pickupLat,
     pickupLng,
     destinationLat,
     destinationLng
   } = req.body;
+ if (merchantId != null && (!Number.isInteger(Number(merchantId)) || Number(merchantId) <= 0)) {
+  return res.status(400).json({
+    success: false,
+    message: "A valid Merchant is required."
+  });
+}
 
   if (
     typeof pickup !== "string" ||
@@ -922,10 +1292,28 @@ app.post("/delivery-request", requireUser, async (req, res) => {
   );
 
   try {
-    const result = await pool.query(
+    if (merchantId != null) {
+    const merchantResult = await pool.query(
+  `SELECT id
+   FROM users
+   WHERE id = $1
+     AND role = 'Merchant'
+     AND verification_status = 'approved'`,
+  [Number(merchantId)]
+);
+
+if (merchantResult.rows.length === 0) {
+  return res.status(400).json({
+    success: false,
+    message: "Selected Merchant is not approved or not found."
+  });
+}
+  }
+const result = await pool.query(
       `INSERT INTO deliveries
        (
          customer_id,
+         merchant_id,
          pickup_address,
          destination_address,
          pickup_lat,
@@ -936,7 +1324,7 @@ app.post("/delivery-request", requireUser, async (req, res) => {
          estimated_price,
          status
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
        RETURNING
          id,
          customer_id,
@@ -952,6 +1340,7 @@ app.post("/delivery-request", requireUser, async (req, res) => {
          created_at`,
       [
         req.user.userId,
+       merchantId == null ? null : Number(merchantId),
         pickup.trim(),
         destination.trim(),
         pickupLatitude,
@@ -1051,6 +1440,7 @@ async function ensureUsersTable() {
 await pool.query(`
   ALTER TABLE deliveries
   ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS merchant_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS driver_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS destination_address TEXT,
   ADD COLUMN IF NOT EXISTS pickup_lat DOUBLE PRECISION,
@@ -1061,10 +1451,135 @@ await pool.query(`
   ADD COLUMN IF NOT EXISTS estimated_price NUMERIC(10, 2),
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
 `);
+await pool.query(`
+  ALTER TABLE deliveries
+  ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'unpaid',
+  ADD COLUMN IF NOT EXISTS merchant_approved BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS paypal_order_id TEXT,
+  ADD COLUMN IF NOT EXISTS paypal_capture_id TEXT,
+  ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ
+`);
 }
 
-ensureUsersTable().catch(console.error);
+const databaseReady = ensureUsersTable();
+app.get("/merchants", requireUser, async (req, res) => {
+  if (req.user.role !== "Customer") {
+    return res.status(403).json({
+      success: false,
+      message: "Customer access only."
+    });
+  }
 
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        COALESCE(NULLIF(TRIM(business_name), ''), full_name) AS name
+      FROM users
+      WHERE role = 'Merchant'
+        AND verification_status = 'approved'
+      ORDER BY name ASC
+    `);
+
+    return res.json({
+      success: true,
+      merchants: result.rows
+    });
+  } catch (error) {
+    console.error("Merchant list error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load Merchants."
+    });
+  }
+});
+app.get("/merchant/deliveries", requireUser, async (req, res) => {
+  if (req.user.role !== "Merchant") {
+    return res.status(403).json({
+      success: false,
+      message: "Merchant access only."
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT
+         id,
+         pickup_address,
+         destination_address,
+         estimated_price,
+         status,
+         payment_status,
+         merchant_approved,
+         created_at
+       FROM deliveries
+       WHERE merchant_id = $1
+         AND status = 'pending'
+       ORDER BY created_at ASC, id ASC`,
+      [req.user.userId]
+    );
+
+    return res.json({
+      success: true,
+      deliveries: result.rows
+    });
+  } catch (error) {
+    console.error("Merchant deliveries error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load deliveries."
+    });
+  }
+});
+
+app.post("/merchant/deliveries/:deliveryId/approve", requireUser, async (req, res) => {
+  if (req.user.role !== "Merchant") {
+    return res.status(403).json({
+      success: false,
+      message: "Merchant access only."
+    });
+  }
+
+  const deliveryId = Number(req.params.deliveryId);
+  if (!Number.isInteger(deliveryId) || deliveryId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: "A valid delivery ID is required."
+    });
+  }
+
+  try {
+    const approved = await pool.query(
+      `UPDATE deliveries
+       SET merchant_approved = TRUE, updated_at = NOW()
+       WHERE id = $1
+         AND merchant_id = $2
+         AND status = 'pending'
+         AND payment_status = 'unpaid'
+         AND merchant_approved = FALSE
+       RETURNING id, merchant_id, merchant_approved`,
+      [deliveryId, req.user.userId]
+    );
+
+    if (approved.rows.length !== 1) {
+      return res.status(409).json({
+        success: false,
+        message: "This delivery cannot be approved by this Merchant."
+      });
+    }
+
+    return res.json({
+      success: true,
+      delivery: approved.rows[0]
+    });
+  } catch (error) {
+    console.error("Merchant delivery approval error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to approve delivery."
+    });
+  }
+});
 app.post("/auth/register", async (req, res) => {
   const { fullName, email, password, role = "Customer", businessName, businessAddress } = req.body;
 
@@ -1214,7 +1729,7 @@ app.get("/driver/status", requireUser, async (req, res) => {
     });
   }
 });
-app.post("/deliveries/:id/accept", requireUser, async (req, res) => {
+app.post("/deliveries/:id/accept", requireUser, requireApprovedWorker, async (req, res) => {
   if (req.user.role !== "Driver") {
     return res.status(403).json({
       success: false,
@@ -1240,6 +1755,8 @@ app.post("/deliveries/:id/accept", requireUser, async (req, res) => {
        WHERE id = $2
          AND status = 'pending'
          AND driver_id IS NULL
+         AND payment_status = 'paid'
+AND (merchant_id IS NULL OR merchant_approved = TRUE)
        RETURNING id, driver_id, status`,
       [req.user.userId, deliveryId]
     );
@@ -1338,7 +1855,185 @@ app.post("/auth/login", async (req, res) => {
     });
   }
 });
-app.listen(PORT, () => {
-    console.log("Mayko Delivery API running on port " + PORT);
+app.get(
+  "/driver/deliveries/available",
+  requireUser,
+  requireApprovedWorker,
+  async (req, res) => {
+    if (req.user.role !== "Driver") {
+      return res.status(403).json({
+        success: false,
+        message: "Driver access only."
+      });
+    }
+
+    try {
+      const driverResult = await pool.query(
+        "SELECT is_online FROM users WHERE id = $1 AND role = 'Driver'",
+        [req.user.userId]
+      );
+
+      if (
+        driverResult.rows.length === 0 ||
+        driverResult.rows[0].is_online !== true
+      ) {
+        return res.status(409).json({
+          success: false,
+          message: "Driver must be online to view deliveries."
+        });
+      }
+
+      const result = await pool.query(`
+        SELECT
+          id,
+          pickup_address AS "pickupAddress",
+          destination_address AS "destinationAddress",
+          pickup_lat AS "pickupLat",
+          pickup_lng AS "pickupLng",
+          destination_lat AS "destinationLat",
+          destination_lng AS "destinationLng",
+          distance_miles AS "distanceMiles",
+          estimated_price AS "estimatedPrice"
+        FROM deliveries
+        WHERE payment_status = 'paid'
+       AND (merchant_id IS NULL OR merchant_approved = TRUE)
+          AND status = 'pending'
+          AND driver_id IS NULL
+        ORDER BY paid_at ASC NULLS LAST, id ASC
+      `);
+
+      return res.json({
+        success: true,
+        deliveries: result.rows
+      });
+    } catch (error) {
+      console.error("Available deliveries error:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to load available deliveries."
+      });
+    }
+  }
+);
+app.post(
+  "/deliveries/:id/confirm-pickup",
+  requireUser,
+  requireApprovedWorker,
+  async (req, res) => {
+    if (req.user.role !== "Driver") {
+      return res.status(403).json({
+        success: false,
+        message: "Driver access only."
+      });
+    }
+
+    const deliveryId = Number(req.params.id);
+
+    if (!Number.isSafeInteger(deliveryId) || deliveryId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery ID."
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `UPDATE deliveries
+         SET status = 'picked_up',
+             updated_at = NOW()
+         WHERE id = $1
+           AND driver_id = $2
+           AND status = 'accepted'
+           AND payment_status = 'paid'
+         RETURNING id, driver_id, status`,
+        [deliveryId, req.user.userId]
+      );
+
+      if (result.rowCount !== 1) {
+        return res.status(409).json({
+          success: false,
+          message: "Pickup cannot be confirmed for this delivery."
+        });
+      }
+
+      return res.json({
+        success: true,
+        delivery: result.rows[0]
+      });
+    } catch (error) {
+      console.error("Confirm pickup error:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to confirm pickup."
+      });
+    }
+  }
+);
+app.post(
+  "/deliveries/:id/confirm-delivery",
+  requireUser,
+  requireApprovedWorker,
+  async (req, res) => {
+    if (req.user.role !== "Driver") {
+      return res.status(403).json({
+        success: false,
+        message: "Driver access only."
+      });
+    }
+
+    const deliveryId = Number(req.params.id);
+
+    if (!Number.isSafeInteger(deliveryId) || deliveryId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery ID."
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `UPDATE deliveries
+         SET status = 'delivered',
+             updated_at = NOW()
+         WHERE id = $1
+           AND driver_id = $2
+           AND status = 'picked_up'
+           AND payment_status = 'paid'
+         RETURNING id, driver_id, status`,
+        [deliveryId, req.user.userId]
+      );
+
+      if (result.rowCount !== 1) {
+        return res.status(409).json({
+          success: false,
+          message: "Delivery cannot be confirmed."
+        });
+      }
+
+      return res.json({
+        success: true,
+        delivery: result.rows[0]
+      });
+    } catch (error) {
+      console.error("Confirm delivery error:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to confirm delivery."
+      });
+    }
+  }
+);
+databaseReady
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log("Mayko Delivery API running on port " + PORT);
     });
+  })
+  .catch((error) => {
+    console.error("Database initialization failed:", error);
+    process.exit(1);
+  });
     
