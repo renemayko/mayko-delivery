@@ -195,45 +195,7 @@ async function requireApprovedWorker(req, res, next) {
         message: "Your account is limited to verification until admin approval."
       });
     }
-if (account.role === "Driver") {
-  const requiredDocumentTypes = [
-    "driver_license",
-    "ssn_verification",
-    "vehicle_insurance",
-    "vehicle_registration"
-  ];
 
-  const documentsResult = await pool.query(
-    `SELECT
-       COUNT(DISTINCT document_type)::int AS required_found,
-       COUNT(*) FILTER (
-         WHERE status <> 'approved'
-       )::int AS not_approved,
-       COUNT(*) FILTER (
-         WHERE expires_at IS NOT NULL
-           AND expires_at < CURRENT_DATE
-       )::int AS expired
-     FROM verification_documents
-     WHERE user_id = $1
-       AND document_type = ANY($2::text[])`,
-    [req.user.userId, requiredDocumentTypes]
-  );
-
-  const docs = documentsResult.rows[0];
-
-  if (
-    docs.required_found !== requiredDocumentTypes.length ||
-    docs.not_approved > 0 ||
-    docs.expired > 0
-  ) {
-    return res.status(403).json({
-      success: false,
-      verificationOnly: true,
-      message:
-        "Driver access is paused until all required documents are approved and valid."
-    });
-  }
-}
     req.worker = account;
     next();
   } catch (error) {
@@ -555,46 +517,7 @@ if (userCheck.rows.length === 0) {
 
 const role = userCheck.rows[0].role;
 
-const requiredDocumentTypes =
-  role === "Driver"
-    ? [
-        "driver_license",
-        "ssn_verification",
-        "vehicle_insurance",
-        "vehicle_registration"
-      ]
-    : [
-        "business_document",
-        "ein_verification"
-      ];
 
-const documentCheck = await pool.query(
-  `SELECT
-     COUNT(DISTINCT document_type)::int AS required_found,
-     COUNT(*) FILTER (WHERE status <> 'approved')::int AS not_approved,
-     COUNT(*) FILTER (
-       WHERE expires_at IS NOT NULL
-         AND expires_at < CURRENT_DATE
-     )::int AS expired
-   FROM verification_documents
-   WHERE user_id = $1
-     AND document_type = ANY($2::text[])`,
-  [userId, requiredDocumentTypes]
-);
-
-const docs = documentCheck.rows[0];
-
-if (
-  docs.required_found !== requiredDocumentTypes.length ||
-  docs.not_approved > 0 ||
-  docs.expired > 0
-) {
-  return res.status(409).json({
-    success: false,
-    message:
-      "All required verification documents must be present, approved, and valid."
-  });
-}
     const result = await pool.query(
       `UPDATE users
        SET verification_status = 'approved'
