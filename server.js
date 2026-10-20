@@ -1380,7 +1380,15 @@ await pool.query(`
   ADD COLUMN IF NOT EXISTS merchant_approved BOOLEAN NOT NULL DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS paypal_order_id TEXT,
   ADD COLUMN IF NOT EXISTS paypal_capture_id TEXT,
-  ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ
+  ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ
+`);
+await pool.query(`
+  ALTER TABLE deliveries
+  ADD COLUMN IF NOT EXISTS driver_payout_status TEXT NOT NULL DEFAULT 'unpaid',
+  ADD COLUMN IF NOT EXISTS driver_paid_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS driver_paid_amount NUMERIC(10, 2),
+  ADD COLUMN IF NOT EXISTS driver_payout_reference TEXT
 `);
 }
 
@@ -1919,7 +1927,8 @@ app.post(
       const result = await pool.query(
         `UPDATE deliveries
          SET status = 'delivered',
-             updated_at = NOW()
+             updated_at = NOW(),
+                 delivered_at = NOW()
          WHERE id = $1
            AND driver_id = $2
            AND status = 'picked_up'
@@ -1945,6 +1954,123 @@ app.post(
       return res.status(500).json({
         success: false,
         message: "Unable to confirm delivery."
+      });
+    }
+  }
+);
+app.get("/admin/driver-earnings/daily", requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        d.driver_id,
+        u.full_name AS driver_name,
+        (d.delivered_at AT TIME ZONE 'America/Los_Angeles')::date AS delivery_day,
+        COUNT(*)::int AS completed_deliveries,
+        SUM(d.estimated_price) AS total_revenue,
+        SUM(ROUND(d.estimated_price * 0.82, 2)) AS driver_earnings,
+        SUM(d.estimated_price - ROUND(d.estimated_price * 0.82, 2)) AS mayko_earnings,
+        SUM(
+          CASE
+            WHEN d.driver_payout_status = 'paid'
+            THEN COALESCE(d.driver_paid_amount, 0)
+            ELSE 0
+          END
+        ) AS amount_paid,
+        COUNT(*) FILTER (
+          WHERE d.driver_payout_status = 'unpaid'
+        )::int AS unpaid_deliveries
+      FROM deliveries d
+      JOIN users u ON u.id = d.driver_id
+      WHERE d.status = 'delivered'
+        AND d.payment_status = 'paid'
+        AND d.delivered_at IS NOT NULL
+        AND d.estimated_price IS NOT NULL
+      GROUP BY
+        d.driver_id,
+        u.full_name,
+        (d.delivered_at AT TIME ZONE 'America/Los_Angeles')::date
+      ORDER BY delivery_day DESC, driver_name ASC
+    `);
+
+    return res.json({
+      success: true,
+      reports: result.rows
+    });
+  } catch (error) {
+    console.error("Driver earnings report error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load driver earnings."
+    });
+  }
+});
+app.patch(
+  "/admin/deliveries/:id/mark-driver-paid",
+  requireAdmin,
+  async (req, res) => {
+    const deliveryId = Number(req.params.id);
+    const reference =
+      typeof req.body?.reference === "string"
+        ? req.body.reference.trim()
+        : "";
+
+    if (!Number.isSafeInteger(deliveryId) || deliveryId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery ID."
+      });
+    }
+
+    if (reference.length < 3 || reference.length > 120) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid Mercury payment reference is required."
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `UPDATE deliveries
+         SET driver_payout_status = 'paid',
+             driver_paid_at = NOW(),
+             driver_paid_amount = ROUND(estimated_price * 0.82, 2),
+             driver_payout_reference = $1,
+             updated_at = NOW()
+         WHERE id = $2
+           AND status = 'delivered'
+           AND payment_status = 'paid'
+           AND driver_id IS NOT NULL
+           AND delivered_at IS NOT NULL
+           AND estimated_price > 0
+           AND driver_payout_status = 'unpaid'
+         RETURNING
+           id,
+           driver_id,
+           driver_payout_status,
+           driver_paid_amount,
+           driver_paid_at,
+           driver_payout_reference`,
+        [reference, deliveryId]
+      );
+
+      if (result.rowCount !== 1) {
+        return res.status(409).json({
+          success: false,
+          message: "Delivery is not eligible or driver was already marked paid."
+        });
+      }
+
+      return res.json({
+        success: true,
+        payout: result.rows[0]
+      });
+    } catch (error) {
+      console.error("Driver payout update error:", error.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to update driver payout."
       });
     }
   }
