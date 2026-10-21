@@ -1,19 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="ht">
 <head>
-    <title>Mayko Delivery</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mande yon woulib</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14202b;--mut:#5b6b7a;--bd:#d9dee4;--ac:#0b6e4f;--acx:#fff;--wa:#1f9d55;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161c;--card:#19222b;--tx:#eef2f5;--mut:#9aabb9;--bd:#2d3a46;--ac:#3ec28f;--acx:#06251a;--wa:#3ec28f}}
+:root[data-theme="dark"]{--bg:#10161c;--card:#19222b;--tx:#eef2f5;--mut:#9aabb9;--bd:#2d3a46;--ac:#3ec28f;--acx:#06251a;--wa:#3ec28f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px 32px}
+h1{font-size:26px;margin:8px 0 4px}
+p.sub{color:var(--mut);margin:0 0 18px}
+.top{display:flex;justify-content:space-between;align-items:center}
+.lang{background:none;border:1px solid var(--bd);color:var(--tx);border-radius:999px;padding:6px 12px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
+input,select{width:100%;font-size:17px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.go{width:100%;margin-top:14px;padding:14px;font-size:17px;font-weight:700;border:0;border-radius:12px;background:var(--ac);color:var(--acx)}
+button.sms{background:none;border:2px solid var(--ac);color:var(--ac)}
+.err{color:#c0392b;font-size:14px;margin-top:10px;min-height:18px}
+a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padding:14px;font-size:17px;font-weight:700;border-radius:12px;background:var(--card);border:2px solid var(--ac);color:var(--ac)}
+.price{margin-top:16px}.price h2{font-size:18px;margin:0 0 8px}.price div{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--bd)}.price div:first-of-type{border-top:0}
+.note{color:var(--mut);font-size:13px;margin-top:14px}
+</style>
 </head>
-
 <body>
+<div class="wrap">
+  <div class="top"><span>🚗 El Cajon · San Diego</span><button class="lang" id="lang">English</button></div>
+  <h1 id="t">Mande yon woulib</h1>
+  <p class="sub" id="s">Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.</p>
+  <div class="card">
+    <label id="l1" for="name">Non ou</label><input id="name" autocomplete="name">
+    <label id="l2" for="phone">Telefòn ou</label><input id="phone" type="tel" autocomplete="tel">
+    <label id="l3" for="from">Kote pou pran w</label><input id="from" autocomplete="street-address">
+    <label id="l4" for="to">Kote w prale</label><input id="to">
+    <div class="row">
+      <div><label id="l5" for="when">Ki lè</label><input id="when" type="datetime-local"></div>
+      <div><label id="l6" for="pax">Kantite moun</label>
+        <select id="pax"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+    </div>
+    <div class="err" id="err"></div>
+    <button class="go" id="wa">WhatsApp</button>
+    <button class="go sms" id="sms">SMS</button>
+  </div>
+  <a class="call" id="call" href="tel:+16196224394">📞 Rele / Call 619-622-4394</a>
+  <div class="card price"><h2 id="ph">Pri yo</h2>
+    <div><span id="p1">Nan El Cajon</span><b>$10+</b></div>
+    <div><span id="p2">El Cajon → San Diego</span><b>$25+</b></div>
+    <div><span id="p3">Ayewopò (San Diego)</span><b>$40+</b></div>
+  </div>
+  <p class="note" id="n">Chofè a pral reponn ou ak pri a anvan woulib la.</p>
+</div>
+<script>
+// CHANJE NIMEWO SA A pou nimewo telefòn chofè a (chif sèlman, ak 1 devan)
+var DRIVER_PHONE = "16196224394";
 
-    <h1>🚚 Mayko Delivery</h1>
-
-    <p>Your trusted delivery partner.</p>
-
-    <a href="Login.html">Login</a>
-
-    <a href="request-delivery.html">Request Delivery</a>
-
+var T = {
+  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri yo",p1:"Nan El Cajon",p2:"El Cajon → San Diego",p3:"Ayewopò (San Diego)",err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
+    m:function(d){return "Bonjou, mwen vle yon woulib.\nNon: "+d.name+"\nTelefòn: "+d.phone+"\nPran m nan: "+d.from+"\nVa nan: "+d.to+"\nLè: "+d.when+"\nMoun: "+d.pax}},
+  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Prices",p1:"Within El Cajon",p2:"El Cajon → San Diego",p3:"Airport (San Diego)",err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
+    m:function(d){return "Hello, I'd like a ride.\nName: "+d.name+"\nPhone: "+d.phone+"\nPickup: "+d.from+"\nDestination: "+d.to+"\nTime: "+d.when+"\nPassengers: "+d.pax}}
+};
+var cur = "ht";
+function $(i){return document.getElementById(i)}
+function render(){
+  var x=T[cur];
+  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","p2","p3"].forEach(function(k){$(k).textContent=x[k]});
+  $("lang").textContent=x.lang; document.documentElement.lang=cur;
+}
+$("lang").onclick=function(){cur=cur==="ht"?"en":"ht";render()};
+function build(){
+  var d={name:$("name").value.trim(),phone:$("phone").value.trim(),from:$("from").value.trim(),to:$("to").value.trim(),
+    when:$("when").value?$("when").value.replace("T"," "):(cur==="ht"?"Kounye a":"Now"),pax:$("pax").value};
+  if(!d.name||!d.from||!d.to){$("err").textContent=T[cur].err;return null}
+  $("err").textContent="";
+  return T[cur].m(d);
+}
+$("wa").onclick=function(){var m=build();if(m)window.open("https://wa.me/"+DRIVER_PHONE+"?text="+encodeURIComponent(m),"_blank")};
+$("sms").onclick=function(){var m=build();if(m)window.location.href="sms:+"+DRIVER_PHONE+"?&body="+encodeURIComponent(m)};
+render();
+</script>
 </body>
 </html>
