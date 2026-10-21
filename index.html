@@ -18,12 +18,13 @@ p.sub{color:var(--mut);margin:0 0 18px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px}
 label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
 input,select{width:100%;font-size:17px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
 button.go{width:100%;margin-top:14px;padding:14px;font-size:17px;font-weight:700;border:0;border-radius:12px;background:var(--ac);color:var(--acx)}
 button.sms{background:none;border:2px solid var(--ac);color:var(--ac)}
 .err{color:#c0392b;font-size:14px;margin-top:10px;min-height:18px}
 a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padding:14px;font-size:17px;font-weight:700;border-radius:12px;background:var(--card);border:2px solid var(--ac);color:var(--ac)}
 .price{margin-top:16px}.price h2{font-size:18px;margin:0 0 8px}.price div{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--bd)}.price div:first-of-type{border-top:0}
+.est{font-weight:600;color:var(--ac)}
 .note{color:var(--mut);font-size:13px;margin-top:14px}
 </style>
 </head>
@@ -47,10 +48,16 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
     <button class="go sms" id="sms">SMS</button>
   </div>
   <a class="call" id="call" href="tel:+16196224394">📞 Rele / Call 619-622-4394</a>
-  <div class="card price"><h2 id="ph">Pri yo</h2>
-    <div><span id="p1">Nan El Cajon</span><b>$10+</b></div>
-    <div><span id="p2">El Cajon → San Diego</span><b>$25+</b></div>
-    <div><span id="p3">Ayewopò (San Diego)</span><b>$40+</b></div>
+  <div class="card price"><h2 id="ph">Pri</h2>
+    <div><span id="p1">Pri pa mil</span><b>$2.50</b></div>
+    <button class="go sms" id="calc" type="button">Kalkile pri a</button>
+    <div class="est" id="est"></div>
+  </div>
+  <div class="card price"><h2 id="pyh">Peman</h2>
+    <div><span>Zelle</span><b>619-622-4394</b></div>
+    <div><span>Cash App</span><b>Mackenson Rene</b></div>
+    <div><span>OnePay</span><b>Mackenson Rene</b></div>
+    <div><span id="pyc">Lajan kach</span><b>✔</b></div>
   </div>
   <p class="note" id="n">Chofè a pral reponn ou ak pri a anvan woulib la.</p>
 </div>
@@ -59,17 +66,17 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
 var DRIVER_PHONE = "16196224394";
 
 var T = {
-  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri yo",p1:"Nan El Cajon",p2:"El Cajon → San Diego",p3:"Ayewopò (San Diego)",err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
+  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri",pyh:"Peman",pyc:"Lajan kach",p1:"Pri pa mil",calc:"Kalkile pri a",wait:"Ap kalkile...",need:"Antre kote pou pran w ak kote w prale an premye.",fail:"Mwen pa t ka kalkile distans lan. Chofè a ap ba w pri a.",res:function(mi,p){return "Distans: "+mi.toFixed(1)+" mil · Pri estime: $"+p.toFixed(2)},err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
     m:function(d){return "Bonjou, mwen vle yon woulib.\nNon: "+d.name+"\nTelefòn: "+d.phone+"\nPran m nan: "+d.from+"\nVa nan: "+d.to+"\nLè: "+d.when+"\nMoun: "+d.pax}},
-  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Prices",p1:"Within El Cajon",p2:"El Cajon → San Diego",p3:"Airport (San Diego)",err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
+  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Price",pyh:"Payment",pyc:"Cash",p1:"Price per mile",calc:"Calculate price",wait:"Calculating...",need:"Enter pickup and destination first.",fail:"Couldn’t calculate the distance. The driver will give you the price.",res:function(mi,p){return "Distance: "+mi.toFixed(1)+" mi · Estimated price: $"+p.toFixed(2)},err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
     m:function(d){return "Hello, I'd like a ride.\nName: "+d.name+"\nPhone: "+d.phone+"\nPickup: "+d.from+"\nDestination: "+d.to+"\nTime: "+d.when+"\nPassengers: "+d.pax}}
 };
 var cur = "ht";
 function $(i){return document.getElementById(i)}
 function render(){
   var x=T[cur];
-  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","p2","p3"].forEach(function(k){$(k).textContent=x[k]});
-  $("lang").textContent=x.lang; document.documentElement.lang=cur;
+  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","calc","pyh","pyc"].forEach(function(k){$(k).textContent=x[k]});
+  $("lang").textContent=x.lang; document.documentElement.lang=cur; showEst();
 }
 $("lang").onclick=function(){cur=cur==="ht"?"en":"ht";render()};
 function build(){
@@ -77,10 +84,34 @@ function build(){
     when:$("when").value?$("when").value.replace("T"," "):(cur==="ht"?"Kounye a":"Now"),pax:$("pax").value};
   if(!d.name||!d.from||!d.to){$("err").textContent=T[cur].err;return null}
   $("err").textContent="";
-  return T[cur].m(d);
+  var m=T[cur].m(d); if(q) m+="\n"+T[cur].res(q.mi,q.price); return m;
 }
 $("wa").onclick=function(){var m=build();if(m)window.open("https://wa.me/"+DRIVER_PHONE+"?text="+encodeURIComponent(m),"_blank")};
 $("sms").onclick=function(){var m=build();if(m)window.location.href="sms:+"+DRIVER_PHONE+"?&body="+encodeURIComponent(m)};
+var RATE = 2.5; // dola pa mil
+var q = null;
+function showEst(){ $("est").textContent = q ? T[cur].res(q.mi,q.price) : ""; }
+async function geo(a){
+  if(!/california|,\s*ca\b/i.test(a)) a += ", California";
+  var r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q="+encodeURIComponent(a));
+  var j = await r.json();
+  if(!j.length) throw new Error("nf");
+  return {lat:j[0].lat, lon:j[0].lon};
+}
+["from","to"].forEach(function(i){ $(i).addEventListener("input", function(){ q=null; showEst(); }); });
+$("calc").onclick = async function(){
+  var f=$("from").value.trim(), t=$("to").value.trim(), x=T[cur];
+  if(!f||!t){ $("est").textContent=x.need; return; }
+  $("est").textContent=x.wait;
+  try{
+    var a=await geo(f), b=await geo(t);
+    var r=await fetch("https://router.project-osrm.org/route/v1/driving/"+a.lon+","+a.lat+";"+b.lon+","+b.lat+"?overview=false");
+    var j=await r.json();
+    var mi=j.routes[0].distance/1609.344;
+    q={mi:mi, price:mi*RATE};
+    showEst();
+  }catch(e){ q=null; $("est").textContent=x.fail; }
+};
 render();
 </script>
 </body>
