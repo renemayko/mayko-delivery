@@ -24,7 +24,9 @@ button.sms{background:none;border:2px solid var(--ac);color:var(--ac)}
 .err{color:#c0392b;font-size:14px;margin-top:10px;min-height:18px}
 a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padding:14px;font-size:17px;font-weight:700;border-radius:12px;background:var(--card);border:2px solid var(--ac);color:var(--ac)}
 .price{margin-top:16px}.price h2{font-size:18px;margin:0 0 8px}.price div{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--bd)}.price div:first-of-type{border-top:0}
-.est{font-weight:600;color:var(--ac)}
+.est{font-weight:700;color:var(--ac);font-size:18px;margin-top:10px}
+.est:empty{display:none}
+.est:not(:empty){background:var(--bg);border:2px solid var(--ac);border-radius:12px;padding:12px}
 .note{color:var(--mut);font-size:13px;margin-top:14px}
 </style>
 </head>
@@ -38,11 +40,13 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
     <label id="l2" for="phone">Telefòn ou</label><input id="phone" type="tel" autocomplete="tel">
     <label id="l3" for="from">Kote pou pran w</label><input id="from" autocomplete="street-address">
     <label id="l4" for="to">Kote w prale</label><input id="to">
+    <div class="est" id="est"></div>
     <div class="row">
       <div><label id="l5" for="when">Ki lè</label><input id="when" type="datetime-local"></div>
       <div><label id="l6" for="pax">Kantite moun</label>
         <select id="pax"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
     </div>
+    <p class="note" id="agree"></p>
     <div class="err" id="err"></div>
     <button class="go" id="wa">WhatsApp</button>
     <button class="go sms" id="sms">SMS</button>
@@ -52,7 +56,7 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
     <div><span id="p1">Pri pa mil</span><b>$2.50</b></div>
     <div><span id="pm">Pri minimòm</span><b>$8</b></div>
     <button class="go sms" id="calc" type="button">Kalkile pri a</button>
-    <div class="est" id="est"></div>
+    
   </div>
   <div class="card price"><h2 id="pyh">Peman</h2>
     <div><span>Zelle</span><b>619-622-4394</b></div>
@@ -67,16 +71,16 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
 var DRIVER_PHONE = "16196224394";
 
 var T = {
-  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri",pyh:"Peman",pyc:"Lajan kach",pm:"Pri minimòm",p1:"Pri pa mil",calc:"Kalkile pri a",wait:"Ap kalkile...",need:"Antre kote pou pran w ak kote w prale an premye.",fail:"Mwen pa t ka kalkile distans lan. Chofè a ap ba w pri a.",res:function(mi,p){return "Distans: "+mi.toFixed(1)+" mil · Pri estime: $"+p.toFixed(2)},err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
+  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri",pyh:"Peman",pyc:"Lajan kach",pm:"Pri minimòm",agree:"Si pri a bon pou ou, voye demann lan.",p1:"Pri pa mil",calc:"Kalkile pri a",wait:"Ap kalkile...",need:"Antre kote pou pran w ak kote w prale an premye.",fail:"Mwen pa t ka kalkile distans lan. Chofè a ap ba w pri a.",res:function(mi,p){return "Distans: "+mi.toFixed(1)+" mil · Pri estime: $"+p.toFixed(2)},err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
     m:function(d){return "Bonjou, mwen vle yon woulib.\nNon: "+d.name+"\nTelefòn: "+d.phone+"\nPran m nan: "+d.from+"\nVa nan: "+d.to+"\nLè: "+d.when+"\nMoun: "+d.pax}},
-  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Price",pyh:"Payment",pyc:"Cash",pm:"Minimum price",p1:"Price per mile",calc:"Calculate price",wait:"Calculating...",need:"Enter pickup and destination first.",fail:"Couldn’t calculate the distance. The driver will give you the price.",res:function(mi,p){return "Distance: "+mi.toFixed(1)+" mi · Estimated price: $"+p.toFixed(2)},err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
+  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Price",pyh:"Payment",pyc:"Cash",pm:"Minimum price",agree:"If the price works for you, send your request.",p1:"Price per mile",calc:"Calculate price",wait:"Calculating...",need:"Enter pickup and destination first.",fail:"Couldn’t calculate the distance. The driver will give you the price.",res:function(mi,p){return "Distance: "+mi.toFixed(1)+" mi · Estimated price: $"+p.toFixed(2)},err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
     m:function(d){return "Hello, I'd like a ride.\nName: "+d.name+"\nPhone: "+d.phone+"\nPickup: "+d.from+"\nDestination: "+d.to+"\nTime: "+d.when+"\nPassengers: "+d.pax}}
 };
 var cur = "ht";
 function $(i){return document.getElementById(i)}
 function render(){
   var x=T[cur];
-  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","calc","pyh","pyc","pm"].forEach(function(k){$(k).textContent=x[k]});
+  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","calc","pyh","pyc","pm","agree"].forEach(function(k){$(k).textContent=x[k]});
   $("lang").textContent=x.lang; document.documentElement.lang=cur; showEst();
 }
 $("lang").onclick=function(){cur=cur==="ht"?"en":"ht";render()};
@@ -93,10 +97,16 @@ var q = null;
 function showEst(){ $("est").textContent = q ? T[cur].res(q.mi,q.price) : ""; }
 async function geo(a){
   if(!/california|,\s*ca\b/i.test(a)) a += ", California";
-  var r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q="+encodeURIComponent(a));
-  var j = await r.json();
-  if(!j.length) throw new Error("nf");
-  return {lat:j[0].lat, lon:j[0].lon};
+  try{
+    var r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q="+encodeURIComponent(a));
+    var j = await r.json();
+    if(j.length) return {lat:j[0].lat, lon:j[0].lon};
+  }catch(e){}
+  var r2 = await fetch("https://photon.komoot.io/api/?limit=1&lat=32.8&lon=-117.1&q="+encodeURIComponent(a));
+  var j2 = await r2.json();
+  if(!j2.features.length) throw new Error("nf");
+  var c = j2.features[0].geometry.coordinates;
+  return {lat:c[1], lon:c[0]};
 }
 var seq=0, pend=null, timer=null;
 function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
