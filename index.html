@@ -50,6 +50,7 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
   <a class="call" id="call" href="tel:+16196224394">📞 Rele / Call 619-622-4394</a>
   <div class="card price"><h2 id="ph">Pri</h2>
     <div><span id="p1">Pri pa mil</span><b>$2.50</b></div>
+    <div><span id="pm">Pri minimòm</span><b>$8</b></div>
     <button class="go sms" id="calc" type="button">Kalkile pri a</button>
     <div class="est" id="est"></div>
   </div>
@@ -66,16 +67,16 @@ a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padd
 var DRIVER_PHONE = "16196224394";
 
 var T = {
-  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri",pyh:"Peman",pyc:"Lajan kach",p1:"Pri pa mil",calc:"Kalkile pri a",wait:"Ap kalkile...",need:"Antre kote pou pran w ak kote w prale an premye.",fail:"Mwen pa t ka kalkile distans lan. Chofè a ap ba w pri a.",res:function(mi,p){return "Distans: "+mi.toFixed(1)+" mil · Pri estime: $"+p.toFixed(2)},err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
+  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri",pyh:"Peman",pyc:"Lajan kach",pm:"Pri minimòm",p1:"Pri pa mil",calc:"Kalkile pri a",wait:"Ap kalkile...",need:"Antre kote pou pran w ak kote w prale an premye.",fail:"Mwen pa t ka kalkile distans lan. Chofè a ap ba w pri a.",res:function(mi,p){return "Distans: "+mi.toFixed(1)+" mil · Pri estime: $"+p.toFixed(2)},err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
     m:function(d){return "Bonjou, mwen vle yon woulib.\nNon: "+d.name+"\nTelefòn: "+d.phone+"\nPran m nan: "+d.from+"\nVa nan: "+d.to+"\nLè: "+d.when+"\nMoun: "+d.pax}},
-  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Price",pyh:"Payment",pyc:"Cash",p1:"Price per mile",calc:"Calculate price",wait:"Calculating...",need:"Enter pickup and destination first.",fail:"Couldn’t calculate the distance. The driver will give you the price.",res:function(mi,p){return "Distance: "+mi.toFixed(1)+" mi · Estimated price: $"+p.toFixed(2)},err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
+  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Price",pyh:"Payment",pyc:"Cash",pm:"Minimum price",p1:"Price per mile",calc:"Calculate price",wait:"Calculating...",need:"Enter pickup and destination first.",fail:"Couldn’t calculate the distance. The driver will give you the price.",res:function(mi,p){return "Distance: "+mi.toFixed(1)+" mi · Estimated price: $"+p.toFixed(2)},err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
     m:function(d){return "Hello, I'd like a ride.\nName: "+d.name+"\nPhone: "+d.phone+"\nPickup: "+d.from+"\nDestination: "+d.to+"\nTime: "+d.when+"\nPassengers: "+d.pax}}
 };
 var cur = "ht";
 function $(i){return document.getElementById(i)}
 function render(){
   var x=T[cur];
-  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","calc","pyh","pyc"].forEach(function(k){$(k).textContent=x[k]});
+  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","calc","pyh","pyc","pm"].forEach(function(k){$(k).textContent=x[k]});
   $("lang").textContent=x.lang; document.documentElement.lang=cur; showEst();
 }
 $("lang").onclick=function(){cur=cur==="ht"?"en":"ht";render()};
@@ -86,9 +87,8 @@ function build(){
   $("err").textContent="";
   var m=T[cur].m(d); if(q) m+="\n"+T[cur].res(q.mi,q.price); return m;
 }
-$("wa").onclick=function(){var m=build();if(m)window.open("https://wa.me/"+DRIVER_PHONE+"?text="+encodeURIComponent(m),"_blank")};
-$("sms").onclick=function(){var m=build();if(m)window.location.href="sms:+"+DRIVER_PHONE+"?&body="+encodeURIComponent(m)};
 var RATE = 2.5; // dola pa mil
+var MINFARE = 8; // pri minimòm
 var q = null;
 function showEst(){ $("est").textContent = q ? T[cur].res(q.mi,q.price) : ""; }
 async function geo(a){
@@ -98,20 +98,48 @@ async function geo(a){
   if(!j.length) throw new Error("nf");
   return {lat:j[0].lat, lon:j[0].lon};
 }
-["from","to"].forEach(function(i){ $(i).addEventListener("input", function(){ q=null; showEst(); }); });
-$("calc").onclick = async function(){
-  var f=$("from").value.trim(), t=$("to").value.trim(), x=T[cur];
-  if(!f||!t){ $("est").textContent=x.need; return; }
+var seq=0, pend=null, timer=null;
+function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+function calc(manual){
+  var f=$("from").value.trim(), t=$("to").value.trim(), x=T[cur], my=++seq;
+  q=null;
+  if(!f||!t){ pend=null; $("est").textContent = manual ? x.need : ""; return null; }
   $("est").textContent=x.wait;
-  try{
-    var a=await geo(f), b=await geo(t);
-    var r=await fetch("https://router.project-osrm.org/route/v1/driving/"+a.lon+","+a.lat+";"+b.lon+","+b.lat+"?overview=false");
-    var j=await r.json();
-    var mi=j.routes[0].distance/1609.344;
-    q={mi:mi, price:mi*RATE};
-    showEst();
-  }catch(e){ q=null; $("est").textContent=x.fail; }
-};
+  pend=(async function(){
+    try{
+      var a=await geo(f);
+      await wait(1100);
+      var b=await geo(t);
+      var r=await fetch("https://router.project-osrm.org/route/v1/driving/"+a.lon+","+a.lat+";"+b.lon+","+b.lat+"?overview=false");
+      var j=await r.json();
+      if(my!==seq) return;
+      var mi=j.routes[0].distance/1609.344;
+      q={mi:mi, price:Math.max(mi*RATE, MINFARE)};
+      showEst();
+    }catch(e){ if(my===seq){ q=null; $("est").textContent=x.fail; } }
+  })();
+  return pend;
+}
+["from","to"].forEach(function(i){
+  $(i).addEventListener("input", function(){
+    q=null; seq++; pend=null; $("est").textContent="";
+    clearTimeout(timer);
+    timer=setTimeout(function(){ calc(false); }, 1200);
+  });
+});
+$("calc").onclick=function(){ clearTimeout(timer); calc(true); };
+function go(kind){
+  var m0=build(); if(!m0) return;
+  function url(m){ return kind==="wa" ? "https://wa.me/"+DRIVER_PHONE+"?text="+encodeURIComponent(m) : "sms:+"+DRIVER_PHONE+"?&body="+encodeURIComponent(m); }
+  if(!q && !pend){ clearTimeout(timer); calc(false); }
+  if(q || !pend){
+    if(kind==="wa") window.open(url(m0),"_blank"); else window.location.href=url(m0);
+    return;
+  }
+  pend.then(function(){ window.location.href=url(build()||m0); });
+}
+$("wa").onclick=function(){ go("wa"); };
+$("sms").onclick=function(){ go("sms"); };
 render();
 </script>
 </body>
