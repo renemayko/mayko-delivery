@@ -1,158 +1,19 @@
 <!DOCTYPE html>
-<html lang="ht">
+<html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mande yon woulib</title>
-<style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#14202b;--mut:#5b6b7a;--bd:#d9dee4;--ac:#0b6e4f;--acx:#fff;--wa:#1f9d55;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161c;--card:#19222b;--tx:#eef2f5;--mut:#9aabb9;--bd:#2d3a46;--ac:#3ec28f;--acx:#06251a;--wa:#3ec28f}}
-:root[data-theme="dark"]{--bg:#10161c;--card:#19222b;--tx:#eef2f5;--mut:#9aabb9;--bd:#2d3a46;--ac:#3ec28f;--acx:#06251a;--wa:#3ec28f}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
-.wrap{max-width:480px;margin:0 auto;padding:20px 16px 32px}
-h1{font-size:26px;margin:8px 0 4px}
-p.sub{color:var(--mut);margin:0 0 18px}
-.top{display:flex;justify-content:space-between;align-items:center}
-.lang{background:none;border:1px solid var(--bd);color:var(--tx);border-radius:999px;padding:6px 12px;font-size:14px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px}
-label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
-input,select{width:100%;font-size:17px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
-.row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
-button.go{width:100%;margin-top:14px;padding:14px;font-size:17px;font-weight:700;border:0;border-radius:12px;background:var(--ac);color:var(--acx)}
-button.sms{background:none;border:2px solid var(--ac);color:var(--ac)}
-.err{color:#c0392b;font-size:14px;margin-top:10px;min-height:18px}
-a.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padding:14px;font-size:17px;font-weight:700;border-radius:12px;background:var(--card);border:2px solid var(--ac);color:var(--ac)}
-.price{margin-top:16px}.price h2{font-size:18px;margin:0 0 8px}.price div{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--bd)}.price div:first-of-type{border-top:0}
-.est{font-weight:700;color:var(--ac);font-size:18px;margin-top:10px}
-a.paycard{display:block;text-align:center;text-decoration:none;margin:10px 0 6px;padding:14px;font-size:17px;font-weight:700;border-radius:12px;background:var(--ac);color:var(--acx)}
-.est:empty{display:none}
-.est:not(:empty){background:var(--bg);border:2px solid var(--ac);border-radius:12px;padding:12px}
-.note{color:var(--mut);font-size:13px;margin-top:14px}
-</style>
+    <title>Mayko Delivery</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<div class="wrap">
-  <div class="top"><span>🚗 El Cajon · San Diego</span><button class="lang" id="lang">English</button></div>
-  <h1 id="t">Mande yon woulib</h1>
-  <p class="sub" id="s">Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.</p>
-  <div class="card">
-    <label id="l1" for="name">Non ou</label><input id="name" autocomplete="name">
-    <label id="l2" for="phone">Telefòn ou</label><input id="phone" type="tel" autocomplete="tel">
-    <label id="l3" for="from">Kote pou pran w</label><input id="from" autocomplete="street-address">
-    <label id="l4" for="to">Kote w prale</label><input id="to">
-    <div class="est" id="est"></div>
-    <div class="row">
-      <div><label id="l5" for="when">Ki lè</label><input id="when" type="datetime-local"></div>
-      <div><label id="l6" for="pax">Kantite moun</label>
-        <select id="pax"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
-    </div>
-    <p class="note" id="agree"></p>
-    <div class="err" id="err"></div>
-    <button class="go" id="wa">WhatsApp</button>
-    <button class="go sms" id="sms">SMS</button>
-  </div>
-  <a class="call" id="call" href="tel:+16196224394">📞 Rele / Call 619-622-4394</a>
-  <div class="card price"><h2 id="ph">Pri</h2>
-    <div><span id="p1">Pri pa mil</span><b>$2.50</b></div>
-    <div><span id="pm">Pri minimòm</span><b>$8</b></div>
-    <button class="go sms" id="calc" type="button">Kalkile pri a</button>
-    
-  </div>
-  <div class="card price"><h2 id="pyh">Peman</h2>
-    <a class="paycard" id="card" href="https://www.paypal.com/ncp/payment/6J7KMLE5HSAPJ" target="_blank" rel="noopener">💳 Peye ak kat (PayPal)</a>
-    <div><span>Zelle</span><b>619-622-4394</b></div>
-    <div><span>Cash App</span><b>Mackenson Rene</b></div>
-    <div><span>OnePay</span><b>Mackenson Rene</b></div>
-    <div><span id="pyc">Lajan kach</span><b>✔</b></div>
-  </div>
-  <p class="note" id="n">Chofè a pral reponn ou ak pri a anvan woulib la.</p>
-</div>
-<script>
-// CHANJE NIMEWO SA A pou nimewo telefòn chofè a (chif sèlman, ak 1 devan)
-var DRIVER_PHONE = "16196224394";
 
-var T = {
-  ht:{t:"Mande yon woulib",s:"Ranpli fòm nan, epi voye demann ou dirèkteman bay chofè a.",l1:"Non ou",l2:"Telefòn ou",l3:"Kote pou pran w",l4:"Kote w prale",l5:"Ki lè",l6:"Kantite moun",n:"Chofè a pral reponn ou ak pri a anvan woulib la.",ph:"Pri",pyh:"Peman",pyc:"Lajan kach",pm:"Pri minimòm",agree:"Si pri a bon pou ou, voye demann lan.",card:"💳 Peye ak kat (PayPal)",p1:"Pri pa mil",calc:"Kalkile pri a",wait:"Ap kalkile...",need:"Antre kote pou pran w ak kote w prale an premye.",fail:"Mwen pa t ka kalkile distans lan. Chofè a ap ba w pri a.",res:function(mi,p){return "Distans: "+mi.toFixed(1)+" mil · Pri estime: $"+p.toFixed(2)},err:"Tanpri ranpli non, kote pou pran w, ak kote w prale.",lang:"English",
-    m:function(d){return "Bonjou, mwen vle yon woulib.\nNon: "+d.name+"\nTelefòn: "+d.phone+"\nPran m nan: "+d.from+"\nVa nan: "+d.to+"\nLè: "+d.when+"\nMoun: "+d.pax}},
-  en:{t:"Request a ride",s:"Fill out the form and send your request straight to the driver.",l1:"Your name",l2:"Your phone",l3:"Pickup location",l4:"Destination",l5:"When",l6:"Passengers",n:"The driver will reply with the price before the ride.",ph:"Price",pyh:"Payment",pyc:"Cash",pm:"Minimum price",agree:"If the price works for you, send your request.",card:"💳 Pay by card (PayPal)",p1:"Price per mile",calc:"Calculate price",wait:"Calculating...",need:"Enter pickup and destination first.",fail:"Couldn’t calculate the distance. The driver will give you the price.",res:function(mi,p){return "Distance: "+mi.toFixed(1)+" mi · Estimated price: $"+p.toFixed(2)},err:"Please fill in your name, pickup, and destination.",lang:"Kreyòl",
-    m:function(d){return "Hello, I'd like a ride.\nName: "+d.name+"\nPhone: "+d.phone+"\nPickup: "+d.from+"\nDestination: "+d.to+"\nTime: "+d.when+"\nPassengers: "+d.pax}}
-};
-var cur = "ht";
-function $(i){return document.getElementById(i)}
-function render(){
-  var x=T[cur];
-  ["t","s","l1","l2","l3","l4","l5","l6","n","ph","p1","calc","pyh","pyc","pm","agree","card"].forEach(function(k){$(k).textContent=x[k]});
-  $("lang").textContent=x.lang; document.documentElement.lang=cur; showEst();
-}
-$("lang").onclick=function(){cur=cur==="ht"?"en":"ht";render()};
-function build(){
-  var d={name:$("name").value.trim(),phone:$("phone").value.trim(),from:$("from").value.trim(),to:$("to").value.trim(),
-    when:$("when").value?$("when").value.replace("T"," "):(cur==="ht"?"Kounye a":"Now"),pax:$("pax").value};
-  if(!d.name||!d.from||!d.to){$("err").textContent=T[cur].err;return null}
-  $("err").textContent="";
-  var m=T[cur].m(d); if(q) m+="\n"+T[cur].res(q.mi,q.price); return m;
-}
-var RATE = 2.5; // dola pa mil
-var MINFARE = 8; // pri minimòm
-var q = null;
-function showEst(){ $("est").textContent = q ? T[cur].res(q.mi,q.price) : ""; }
-async function geo(a){
-  if(!/california|,\s*ca\b/i.test(a)) a += ", California";
-  try{
-    var r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q="+encodeURIComponent(a));
-    var j = await r.json();
-    if(j.length) return {lat:j[0].lat, lon:j[0].lon};
-  }catch(e){}
-  var r2 = await fetch("https://photon.komoot.io/api/?limit=1&lat=32.8&lon=-117.1&q="+encodeURIComponent(a));
-  var j2 = await r2.json();
-  if(!j2.features.length) throw new Error("nf");
-  var c = j2.features[0].geometry.coordinates;
-  return {lat:c[1], lon:c[0]};
-}
-var seq=0, pend=null, timer=null;
-function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
-function calc(manual){
-  var f=$("from").value.trim(), t=$("to").value.trim(), x=T[cur], my=++seq;
-  q=null;
-  if(!f||!t){ pend=null; $("est").textContent = manual ? x.need : ""; return null; }
-  $("est").textContent=x.wait;
-  pend=(async function(){
-    try{
-      var a=await geo(f);
-      await wait(1100);
-      var b=await geo(t);
-      var r=await fetch("https://router.project-osrm.org/route/v1/driving/"+a.lon+","+a.lat+";"+b.lon+","+b.lat+"?overview=false");
-      var j=await r.json();
-      if(my!==seq) return;
-      var mi=j.routes[0].distance/1609.344;
-      q={mi:mi, price:Math.max(mi*RATE, MINFARE)};
-      showEst();
-    }catch(e){ if(my===seq){ q=null; $("est").textContent=x.fail; } }
-  })();
-  return pend;
-}
-["from","to"].forEach(function(i){
-  $(i).addEventListener("input", function(){
-    q=null; seq++; pend=null; $("est").textContent="";
-    clearTimeout(timer);
-    timer=setTimeout(function(){ calc(false); }, 1200);
-  });
-});
-$("calc").onclick=function(){ clearTimeout(timer); calc(true); };
-function go(kind){
-  var m0=build(); if(!m0) return;
-  function url(m){ return kind==="wa" ? "https://wa.me/"+DRIVER_PHONE+"?text="+encodeURIComponent(m) : "sms:+"+DRIVER_PHONE+"?&body="+encodeURIComponent(m); }
-  if(!q && !pend){ clearTimeout(timer); calc(false); }
-  if(q || !pend){
-    if(kind==="wa") window.open(url(m0),"_blank"); else window.location.href=url(m0);
-    return;
-  }
-  pend.then(function(){ window.location.href=url(build()||m0); });
-}
-$("wa").onclick=function(){ go("wa"); };
-$("sms").onclick=function(){ go("sms"); };
-render();
-</script>
+<body>
+
+    <h1>🚚 Mayko Delivery</h1>
+
+    <p>Your trusted delivery partner.</p>
+
+    <a href="Login.html">Login</a>
+
+    <a href="request-delivery.html">Request Delivery</a>
+
 </body>
 </html>
