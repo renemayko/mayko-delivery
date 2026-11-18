@@ -1424,7 +1424,7 @@ app.get("/merchants", requireUser, async (req, res) => {
     });
   }
 });
-app.get("/merchant/deliveries", requireUser, async (req, res) => {
+app.get("/merchant/deliveries", requireUser, requireApprovedWorker, async (req, res) => {
   if (req.user.role !== "Merchant") {
     return res.status(403).json({
       success: false,
@@ -1463,7 +1463,7 @@ app.get("/merchant/deliveries", requireUser, async (req, res) => {
   }
 });
 
-app.post("/merchant/deliveries/:deliveryId/approve", requireUser, async (req, res) => {
+app.post("/merchant/deliveries/:deliveryId/approve", requireUser, requireApprovedWorker, async (req, res) => {
   if (req.user.role !== "Merchant") {
     return res.status(403).json({
       success: false,
@@ -1593,7 +1593,7 @@ app.delete("/auth/account", requireUser, async (req, res) => {
     });
   }
 });
-app.post("/driver/status", requireUser, async (req, res) => {
+app.post("/driver/status", requireUser, requireApprovedWorker, async (req, res) => {
   if (req.user.role !== "Driver") {
     return res.status(403).json({
       success: false,
